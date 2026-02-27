@@ -19,6 +19,7 @@ class SessionController extends Controller
             'teacher_code' => 'required|string|max:50',
             'subject' => 'required|string|max:255',
             'section' => 'required|string|max:50',
+            'laboratory_name' => 'required|string',
         ]);
 
         // 2. Creamos la sesión en tu base de datos QRLAB
@@ -27,6 +28,7 @@ class SessionController extends Controller
             'teacher_code' => $request->teacher_code,
             'subject' => $request->subject,
             'section' => $request->section,
+            'laboratory_name' => $request->laboratory_name,
             'qr_token' => Str::uuid()->toString(), // Genera el token único para el QR
             'is_active' => true,
         ]);
@@ -70,5 +72,60 @@ class SessionController extends Controller
             'total_students' => $studentCount,
             'download_url' => url("/api/admin/descargar-reporte/{$session->id}")
         ], 200);
+    }
+    /**
+     * DESCARGAR REPORTE: Genera un archivo CSV (Excel) con la asistencia
+     */
+    public function downloadReport($id)
+    {
+        // Buscamos la sesión y traemos a todos los estudiantes registrados
+        $session = Session::with('attendances')->findOrFail($id);
+
+        $fileName = "Reporte_Lab_{$session->subject}.csv";
+
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['Nombre del Estudiante', 'Carnet', 'Carrera', 'Hora de Escaneo'];
+
+        $callback = function () use ($session, $columns) {
+            $file = fopen('php://output', 'w');
+            // Esto arregla los caracteres especiales (tildes, ñ)
+            fputs($file, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+
+            // CAMBIO 1: Agregamos el ';' al final
+            fputcsv($file, $columns, ';');
+
+            foreach ($session->attendances as $attendance) {
+                // CAMBIO 2: Agregamos el ';' al final del arreglo
+                fputcsv($file, [
+                    $attendance->student_name,
+                    $attendance->student_code,
+                    $attendance->career,
+                    $attendance->created_at->format('d/m/Y H:i A')
+                ], ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+    /**
+     * DASHBOARD ADMIN: Devuelve todas las sesiones con su conteo de alumnos
+     */
+    public function index()
+    {
+        // Traemos todas las sesiones, de la más nueva a la más antigua, 
+        // y usamos 'withCount' para que Laravel cuente los alumnos por nosotros automáticamente.
+        $sessions = Session::withCount('attendances')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($sessions);
     }
 }

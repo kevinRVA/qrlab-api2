@@ -11,3 +11,4 @@ Route::get('/admin/sesiones', [SessionController::class, 'index']); // Para el d
 
 // ENTORNO ESTUDIANTE (App React Native)
 Route::post('/estudiante/escanear-qr', [AttendanceController::class, 'scan']);
+Route::get('/admin/descargar-reporte/{id}', [SessionController::class, 'downloadReport']);
