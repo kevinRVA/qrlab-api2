@@ -31,6 +31,16 @@
             height: 280px;
             width: 100%;
         }
+
+        /* Agrega esto a tus estilos */
+        .cursor-pointer {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cursor-pointer:hover {
+            background-color: #e9ecef !important;
+        }
     </style>
 </head>
 
@@ -157,11 +167,23 @@
                         <table class="table table-hover mb-0 text-sm align-middle">
                             <thead class="table-light sticky-top">
                                 <tr>
-                                    <th>Fecha</th>
-                                    <th>Laboratorio</th>
-                                    <th>Docente</th>
-                                    <th>Asignatura</th>
-                                    <th class="text-center">Alumnos</th>
+                                    <th class="cursor-pointer" onclick="ordenarTabla('fecha')">
+                                        Fecha <i class="fa-solid fa-sort text-muted ms-1" id="icono-fecha"></i>
+                                    </th>
+                                    <th class="cursor-pointer" onclick="ordenarTabla('laboratorio')">
+                                        Laboratorio <i class="fa-solid fa-sort text-muted ms-1"
+                                            id="icono-laboratorio"></i>
+                                    </th>
+                                    <th class="cursor-pointer" onclick="ordenarTabla('docente')">
+                                        Docente <i class="fa-solid fa-sort text-muted ms-1" id="icono-docente"></i>
+                                    </th>
+                                    <th class="cursor-pointer" onclick="ordenarTabla('asignatura')">
+                                        Asignatura <i class="fa-solid fa-sort text-muted ms-1"
+                                            id="icono-asignatura"></i>
+                                    </th>
+                                    <th class="text-center cursor-pointer" onclick="ordenarTabla('alumnos')">
+                                        Alumnos <i class="fa-solid fa-sort text-muted ms-1" id="icono-alumnos"></i>
+                                    </th>
                                     <th class="text-center">Detalle</th>
                                 </tr>
                             </thead>
@@ -185,6 +207,10 @@
         let chartLabs = null;
         let chartMaterias = null;
         let chartDocentes = null;
+
+        // Variables para controlar el orden de la tabla
+        let columnaOrdenActual = '';
+        let ordenAscendente = true;
 
         document.addEventListener("DOMContentLoaded", () => {
             cargarDatos();
@@ -413,6 +439,79 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // --- NUEVAS FUNCIONES DE ORDENAMIENTO ---
+
+        function ordenarTabla(columna) {
+            // 1. Verificar si hacemos clic en la misma columna para invertir el orden
+            if (columnaOrdenActual === columna) {
+                ordenAscendente = !ordenAscendente;
+            } else {
+                columnaOrdenActual = columna;
+                ordenAscendente = true; // Por defecto empezamos de menor a mayor / A-Z
+            }
+
+            // 2. Ordenar el arreglo filtrado
+            sesionesFiltradas.sort((a, b) => {
+                let valorA, valorB;
+
+                // Extraemos los valores dependiendo de la columna seleccionada
+                switch (columna) {
+                    case 'fecha':
+                        valorA = new Date(a.created_at).getTime();
+                        valorB = new Date(b.created_at).getTime();
+                        break;
+                    case 'laboratorio':
+                        valorA = (a.laboratory_name || 'Sin Asignar').toLowerCase();
+                        valorB = (b.laboratory_name || 'Sin Asignar').toLowerCase();
+                        break;
+                    case 'docente':
+                        valorA = a.teacher_name.toLowerCase();
+                        valorB = b.teacher_name.toLowerCase();
+                        break;
+                    case 'asignatura':
+                        valorA = a.subject.toLowerCase();
+                        valorB = b.subject.toLowerCase();
+                        break;
+                    case 'alumnos':
+                        valorA = a.attendances_count;
+                        valorB = b.attendances_count;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                // Lógica de comparación
+                if (valorA < valorB) return ordenAscendente ? -1 : 1;
+                if (valorA > valorB) return ordenAscendente ? 1 : -1;
+                return 0;
+            });
+
+            // 3. Cambiar los iconos (flechita arriba o abajo)
+            actualizarIconosOrden(columna);
+
+            // 4. Redibujar la tabla con el nuevo orden
+            renderizarTabla();
+        }
+
+        function actualizarIconosOrden(columnaActiva) {
+            const columnas = ['fecha', 'laboratorio', 'docente', 'asignatura', 'alumnos'];
+
+            columnas.forEach(col => {
+                const icono = document.getElementById(`icono-${col}`);
+                if (icono) {
+                    if (col === columnaActiva) {
+                        // Si es la columna activa, ponemos flecha arriba o abajo en color primario
+                        icono.className = ordenAscendente
+                            ? 'fa-solid fa-sort-up text-primary ms-1'
+                            : 'fa-solid fa-sort-down text-primary ms-1';
+                    } else {
+                        // Si no es la activa, la devolvemos a su estado neutral
+                        icono.className = 'fa-solid fa-sort text-muted ms-1';
+                    }
+                }
+            });
         }
     </script>
 
