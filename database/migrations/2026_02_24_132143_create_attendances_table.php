@@ -13,10 +13,8 @@ return new class extends Migration {
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('session_id')->constrained()->onDelete('cascade');
-            $table->string('student_name');
-            $table->string('student_code'); // El carné
-            $table->string('career'); // La carrera
-            $table->timestamps(); // created_at será la hora exacta del escaneo
+            $table->foreignId('student_id')->constrained('users')->onDelete('cascade'); // <-- Nuevo
+            $table->timestamps();
         });
     }
 

@@ -10,8 +10,11 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::table('sessions', function (Blueprint $table) {
-            $table->string('laboratory_name')->after('section')->nullable();
+        Schema::create('subjects', function (Blueprint $table) {
+            $table->id();
+            $table->string('name'); // Ej. Programación II
+            $table->string('code')->unique(); // Ej. PRG2
+            $table->timestamps();
         });
     }
 
@@ -20,8 +23,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('sessions', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('subjects');
     }
 };

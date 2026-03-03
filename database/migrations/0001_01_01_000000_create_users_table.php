@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -17,6 +16,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // --- NUEVOS CAMPOS PARA QRLAB ---
+            $table->string('role')->default('student'); // Identifica si es 'admin', 'teacher' o 'student'
+            $table->string('user_code')->unique()->nullable(); // Carné (ej. 2705632024) o Código (ej. DOC-7788)
+            $table->string('career')->nullable(); // Ej. Ingeniería en Sistemas (solo estudiantes)
+            // --------------------------------
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -27,14 +33,8 @@ return new class extends Migration
             $table->timestamp('created_at')->nullable();
         });
 
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
+        // NOTA: Eliminamos la tabla 'sessions' de Laravel por defecto
+        // para que no choque con nuestra tabla 'sessions' de las clases del laboratorio.
     }
 
     /**
@@ -44,6 +44,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
+        // También quitamos el drop de sessions de aquí
     }
 };

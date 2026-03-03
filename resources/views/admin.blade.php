@@ -440,7 +440,7 @@
             link.click();
             document.body.removeChild(link);
         }
-
+        
         // --- NUEVAS FUNCIONES DE ORDENAMIENTO ---
 
         function ordenarTabla(columna) {
