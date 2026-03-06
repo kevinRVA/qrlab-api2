@@ -9,18 +9,21 @@ class Session extends Model
 {
     use HasFactory;
 
-    // AQUÍ ESTÁ LA MAGIA: Si no pones laboratory_name aquí, Laravel lo ignora al guardar
+    // LA NUEVA MAGIA: Ahora solo guardamos el ID de la sección y el laboratorio
     protected $fillable = [
-        'teacher_name',
-        'teacher_code',
-        'subject',
-        'section',
-        'laboratory_name', // <-- ¡Asegúrate de tener esta línea!
+        'section_id',
+        'laboratory_name',
         'qr_token',
         'is_active',
     ];
 
-    // ... aquí abajo sigue tu relación attendances()
+    // Relación: Esta clase (sesión) pertenece a una Sección específica
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
+    }
+
+    // Relación: Esta clase tiene muchas asistencias de alumnos
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
