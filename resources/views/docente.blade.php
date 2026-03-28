@@ -59,6 +59,10 @@
                 <button id="btn-generar" class="btn btn-primary w-100 fw-bold py-2" onclick="generarQR()">
                     <i class="fa-solid fa-qrcode"></i> Generar Código QR
                 </button>
+                
+                <button id="btn-finalizar" class="btn btn-danger w-100 fw-bold py-2 d-none" onclick="finalizarClase()">
+                    <i class="fa-solid fa-stop"></i> Finalizar Clase
+                </button>
             </div>
         </div>
 
@@ -81,25 +85,27 @@
 </div>
 
 <script>
+    let currentSessionId = null; // Guardará el ID de la clase activa
+
     async function generarQR() {
         const sectionId = document.getElementById('select-section').value;
         const labName = document.getElementById('select-lab').value;
-        const btn = document.getElementById('btn-generar');
+        const btnGenerar = document.getElementById('btn-generar');
 
         if (!sectionId || !labName) {
             alert('Por favor selecciona una materia y un laboratorio.');
             return;
         }
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+        btnGenerar.disabled = true;
+        btnGenerar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
 
         try {
             const response = await fetch('/docente/sesion', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Seguridad de Laravel
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({ section_id: sectionId, laboratory_name: labName })
             });
@@ -107,31 +113,82 @@
             const data = await response.json();
 
             if (data.success) {
-                // Limpiar QR anterior
+                currentSessionId = data.session_id; // Guardamos el ID
+
                 document.getElementById('qr-placeholder').style.display = 'none';
                 document.getElementById('qrcode').innerHTML = '';
                 
-                // Dibujar el nuevo QR usando la URL COMPLETA
                 new QRCode(document.getElementById("qrcode"), {
-                    text: data.qr_url, // Esto ahora es algo como http://192.168.1.5:8000/asistencia/AbCdE
-                    width: 200,
-                    height: 200,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
+                    text: data.qr_url,
+                    width: 200, height: 200,
+                    colorDark : "#000000", colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
 
-                // Mostrar el link para que tú como admin lo puedas probar dándole clic
                 const linkPrueba = document.getElementById('link-prueba');
                 linkPrueba.href = data.qr_url;
                 linkPrueba.classList.remove('d-none');
+
+                // Ocultar botón de generar y mostrar el de finalizar
+                btnGenerar.classList.add('d-none');
+                document.getElementById('btn-finalizar').classList.remove('d-none');
+                
+                // Bloquear los selects para que no los cambie por accidente
+                document.getElementById('select-section').disabled = true;
+                document.getElementById('select-lab').disabled = true;
             }
         } catch (error) {
             console.error('Error:', error);
             alert('Hubo un error al generar la sesión.');
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-qrcode"></i> Generar Código QR';
+            btnGenerar.disabled = false;
+            btnGenerar.innerHTML = '<i class="fa-solid fa-qrcode"></i> Generar Código QR';
+        }
+    }
+
+    // NUEVA FUNCIÓN PARA FINALIZAR
+    async function finalizarClase() {
+        if (!currentSessionId) return;
+
+        const btnFinalizar = document.getElementById('btn-finalizar');
+        btnFinalizar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando...';
+        btnFinalizar.disabled = true;
+
+        try {
+            const response = await fetch('/docente/sesion/finalizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ session_id: currentSessionId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Restaurar toda la interfaz a su estado original
+                document.getElementById('qrcode').innerHTML = '';
+                document.getElementById('qr-placeholder').style.display = 'block';
+                document.getElementById('link-prueba').classList.add('d-none');
+                
+                document.getElementById('btn-generar').classList.remove('d-none');
+                btnFinalizar.classList.add('d-none');
+
+                document.getElementById('select-section').disabled = false;
+                document.getElementById('select-lab').disabled = false;
+                document.getElementById('select-section').value = '';
+                document.getElementById('select-lab').value = '';
+
+                currentSessionId = null;
+                alert('La clase ha sido finalizada. El código QR ya no es válido.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error al finalizar la clase.');
+        } finally {
+            btnFinalizar.innerHTML = '<i class="fa-solid fa-stop"></i> Finalizar Clase';
+            btnFinalizar.disabled = false;
         }
     }
 </script>

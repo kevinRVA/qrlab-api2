@@ -49,4 +49,24 @@ class TeacherController extends Controller
             'session_id' => $session->id
         ]);
     }
+    // Finaliza la sesión actual (Invalida el QR)
+    public function finishSession(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:sessions,id'
+        ]);
+
+        $session = Session::find($request->session_id);
+
+        // Medida de seguridad: Validar que la sesión pertenezca a una clase de este maestro
+        $teacher = Auth::user();
+        if ($session->section->teacher_id !== $teacher->id) {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 403);
+        }
+
+        // Apagamos el QR
+        $session->update(['is_active' => false]);
+
+        return response()->json(['success' => true]);
+    }
 }

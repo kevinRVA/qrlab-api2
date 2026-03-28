@@ -46,14 +46,28 @@
 
 <body>
 
-    <nav class="navbar navbar-dark bg-dark shadow-sm">
+<nav class="navbar navbar-dark bg-dark shadow-sm">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="#">
                 <i class="fa-solid fa-chart-pie"></i> <strong>QR-LAB</strong> | Panel de Administración
             </a>
-            <button class="btn btn-outline-light btn-sm" onclick="cargarDatos()">
-                <i class="fa-solid fa-rotate-right"></i> Actualizar Datos
-            </button>
+            
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3 small d-none d-md-inline">
+                    <i class="fa-solid fa-shield-halved text-primary"></i> {{ Auth::user()->name }}
+                </span>
+                
+                <button class="btn btn-outline-light btn-sm me-2" onclick="cargarDatos()">
+                    <i class="fa-solid fa-rotate-right"></i> <span class="d-none d-sm-inline">Actualizar</span>
+                </button>
+
+                <form action="{{ route('logout') }}" method="POST" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="d-none d-sm-inline">Salir</span>
+                    </button>
+                </form>
+            </div>
         </div>
     </nav>
 
