@@ -180,7 +180,7 @@
         <div class="logo-text">&#x25A0; QR-LAB · UTEC</div>
         <div class="lab-name">{{ $lab->name }}</div>
         <div style="font-size:0.8rem; opacity:0.75; margin-top:0.25rem;">
-            Acceso voluntario — Escanea para registrar tu entrada/salida
+            Practicas libres — Escanea para registrar tu entrada/salida
         </div>
     </div>
 
@@ -191,16 +191,17 @@
         <div class="instructions">
             <h4>📲 Instrucciones de uso</h4>
             <ol>
-                <li><strong>1er escaneo del día:</strong> Registra tu <strong>entrada</strong> al laboratorio.</li>
-                <li><strong>2do escaneo del día:</strong> Registra tu <strong>salida</strong> del laboratorio.</li>
+                <li><strong>1er escaneo</strong> Registra tu <strong>entrada</strong> al laboratorio.</li>
+                <li><strong>2do escaneo</strong> Registra tu <strong>salida</strong> del laboratorio.</li>
                 <li>Debes estar <strong>iniciado sesión</strong> en QR-LAB para que funcione.</li>
                 <li>Si no marcas la salida, el sistema la cerrará automáticamente a las <strong>00:00 hrs</strong>.</li>
+                <li>Recuerda si no marcas tus salidas pueden llamarte la atención.</li>
             </ol>
         </div>
     </div>
 
     <div class="card-footer-print">
-        QR-LAB · Sistema de Control de Asistencia · UTEC 2026
+        QR-LAB · UTEC 2026
     </div>
 </div>
 
@@ -208,8 +209,8 @@
     // Generamos el QR con la URL completa del laboratorio
     new QRCode(document.getElementById("qr-code"), {
         text: "{{ $qrUrl }}",
-        width: 220,
-        height: 220,
+        width: 300,
+        height: 300,
         colorDark: "#6b1a2a",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H

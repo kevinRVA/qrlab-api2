@@ -37,7 +37,7 @@ class StudentController extends Controller
             ->where('no_exit_warning', true)
             ->count();
 
-        return view('perfil', compact('user', 'inscripciones', 'historial', 'visitasLab', 'avisosSinSalida'));
+        return view('estudiante.perfil', compact('user', 'inscripciones', 'historial', 'visitasLab', 'avisosSinSalida'));
     }
 }
 

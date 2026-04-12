@@ -12,17 +12,35 @@ use Carbon\Carbon;
 
 class AdminController extends Controller
 {
-    // Esta es la función que ya tenías
+    /**
+     * Hub principal del panel de administración.
+     */
     public function index()
     {
         $stats = [
-            'students' => User::where('role', 'student')->count(),
-            'teachers' => User::where('role', 'teacher')->count(),
-            'active_sessions' => Session::where('is_active', true)->count(),
-            'total_attendances' => Attendance::count()
+            'students'          => User::where('role', 'student')->count(),
+            'teachers'          => User::where('role', 'teacher')->count(),
+            'active_sessions'   => Session::where('is_active', true)->count(),
+            'total_attendances' => Attendance::count(),
         ];
 
-        return view('admin', compact('stats'));
+        return view('admin.index', compact('stats'));
+    }
+
+    /**
+     * Vista: Asistencia de Clases.
+     */
+    public function asistencia()
+    {
+        return view('admin.asistencia');
+    }
+
+    /**
+     * Vista: Prácticas Libres (acceso voluntario a laboratorios).
+     */
+    public function practicasLibres()
+    {
+        return view('admin.practicas-libres');
     }
 
     // 1. NUEVA FUNCIÓN: Alimenta la tabla y las gráficas con datos relacionales
@@ -103,7 +121,11 @@ class AdminController extends Controller
 
     /**
      * API JSON: Retorna las visitas a laboratorios.
-     * Parámetros GET opcionales: lab_id, fecha (Y-m-d)
+     * Parámetros GET opcionales:
+     *   - lab_id       : ID del laboratorio (o 'TODOS')
+     *   - fecha_desde  : fecha inicio del rango (Y-m-d)
+     *   - fecha_hasta  : fecha fin del rango   (Y-m-d)
+     * Por defecto devuelve los últimos 7 días (incluyendo hoy).
      */
     public function getLabVisitasApi(Request $request)
     {
@@ -114,12 +136,17 @@ class AdminController extends Controller
             $query->where('laboratory_id', $request->lab_id);
         }
 
-        if ($request->filled('fecha')) {
-            $query->whereDate('entry_time', $request->fecha);
-        } else {
-            // Por defecto: hoy
-            $query->whereDate('entry_time', Carbon::today());
-        }
+        // Rango de fechas: si no se envía ninguno, últimos 7 días
+        $desde = $request->filled('fecha_desde')
+            ? Carbon::parse($request->fecha_desde)->startOfDay()
+            : Carbon::today()->subDays(6)->startOfDay();
+
+        $hasta = $request->filled('fecha_hasta')
+            ? Carbon::parse($request->fecha_hasta)->endOfDay()
+            : Carbon::today()->endOfDay();
+
+        $query->whereBetween('entry_time', [$desde, $hasta]);
+
 
         $visitas = $query->get()->map(function ($v) {
             $duracion = null;

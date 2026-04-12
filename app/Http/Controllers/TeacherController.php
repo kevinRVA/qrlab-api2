@@ -20,7 +20,7 @@ class TeacherController extends Controller
         $sections = Section::with('subject')->where('teacher_id', $teacher->id)->get();
         $laboratories = Laboratory::all();
 
-        return view('docente', compact('teacher', 'sections', 'laboratories'));
+        return view('docente.index', compact('teacher', 'sections', 'laboratories'));
     }
 
     // Crea la sesión en la base de datos y devuelve la URL para el QR

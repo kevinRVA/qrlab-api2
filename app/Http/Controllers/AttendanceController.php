@@ -1,21 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Model;
-
-class Attendance extends Model
+class AttendanceController extends Controller
 {
-    // Ahora guardamos el ID de la sesión y el ID del estudiante
-    protected $fillable = ['session_id', 'student_id'];
-
-    public function session()
-    {
-        return $this->belongsTo(Session::class);
-    }
-
-    public function student()
-    {
-        return $this->belongsTo(User::class, 'student_id');
-    }
+    // Controlador reservado para la app móvil (API).
+    // La lógica de escaneo de QR via app móvil se implementa aquí.
 }

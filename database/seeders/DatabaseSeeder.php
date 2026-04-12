@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             'Laboratorio 2',
             'Laboratorio 3',
             'Laboratorio 4',
-            'Laboratorio 35',
+            'Laboratorio 5',
             'Laboratorio 6',
             'Laboratorio 7',
             'Laboratorio 8',
