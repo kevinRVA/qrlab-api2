@@ -37,7 +37,10 @@ class DatabaseSeeder extends Seeder
             'Laboratorio 15'
         ];
         foreach ($labs as $lab) {
-            Laboratory::create(['name' => $lab]);
+            Laboratory::create([
+                'name' => $lab,
+                'qr_token' => 'LAB-' . strtoupper(\Illuminate\Support\Str::random(12))
+            ]);
         }
 
         // 2. Crear Administrador (Tú)
