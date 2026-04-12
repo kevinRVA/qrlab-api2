@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Session;
 use App\Models\Attendance;
+use App\Models\Laboratory;
+use App\Models\LabVisit;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -92,5 +95,88 @@ class AdminController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    // =====================================================================
+    // MÉTODOS PARA ASISTENCIA VOLUNTARIA POR LABORATORIO
+    // =====================================================================
+
+    /**
+     * API JSON: Retorna las visitas a laboratorios.
+     * Parámetros GET opcionales: lab_id, fecha (Y-m-d)
+     */
+    public function getLabVisitasApi(Request $request)
+    {
+        $query = LabVisit::with(['student', 'laboratory'])
+            ->orderByDesc('entry_time');
+
+        if ($request->filled('lab_id') && $request->lab_id !== 'TODOS') {
+            $query->where('laboratory_id', $request->lab_id);
+        }
+
+        if ($request->filled('fecha')) {
+            $query->whereDate('entry_time', $request->fecha);
+        } else {
+            // Por defecto: hoy
+            $query->whereDate('entry_time', Carbon::today());
+        }
+
+        $visitas = $query->get()->map(function ($v) {
+            $duracion = null;
+            if ($v->entry_time && $v->exit_time) {
+                $diff = $v->entry_time->diff($v->exit_time);
+                $duracion = $diff->h . 'h ' . $diff->i . 'min';
+            }
+
+            return [
+                'id'               => $v->id,
+                'carnet'           => $v->student->user_code ?? 'N/A',
+                'nombre'           => $v->student->name ?? 'Desconocido',
+                'laboratorio'      => $v->laboratory->name ?? 'Desconocido',
+                'laboratory_id'    => $v->laboratory_id,
+                'entry_time'       => $v->entry_time?->format('H:i:s'),
+                'exit_time'        => $v->exit_time?->format('H:i:s'),
+                'duracion'         => $duracion,
+                'auto_closed'      => $v->auto_closed,
+                'no_exit_warning'  => $v->no_exit_warning,
+                'fecha'            => $v->entry_time?->format('d/m/Y'),
+            ];
+        });
+
+        return response()->json($visitas);
+    }
+
+    /**
+     * API JSON: Lista todos los laboratorios con su token QR y URL de impresión.
+     */
+    public function getLabsApi()
+    {
+        $labs = Laboratory::all()->map(function ($lab) {
+            return [
+                'id'          => $lab->id,
+                'name'        => $lab->name,
+                'qr_token'    => $lab->qr_token,
+                'print_url'   => route('admin.lab.imprimir', $lab->id),
+                'scan_url'    => $lab->qr_token ? url('/lab-qr/' . $lab->qr_token) : null,
+            ];
+        });
+
+        return response()->json($labs);
+    }
+
+    /**
+     * Vista de impresión del QR estático de un laboratorio.
+     */
+    public function printLabQr($id)
+    {
+        $lab = Laboratory::findOrFail($id);
+
+        if (empty($lab->qr_token)) {
+            return back()->with('error', 'Este laboratorio aún no tiene un QR generado. Ejecuta: php artisan lab:generar-qr');
+        }
+
+        $qrUrl = url('/lab-qr/' . $lab->qr_token);
+
+        return view('lab.imprimir-qr', compact('lab', 'qrUrl'));
     }
 }

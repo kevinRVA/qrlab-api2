@@ -13,10 +13,20 @@
         .input-group-text { border-right: none; background-color: #fff; }
         .form-control { border-left: none; }
         .form-control:focus { box-shadow: none; border-color: #dee2e6; }
+        /* Color institucional */
+        .btn-qrlab {
+            background-color: #6b1a2a;
+            color: #fff;
+            border: none;
+        }
+        .btn-qrlab:hover, .btn-qrlab:focus {
+            background-color: #52131f;
+            color: #fff;
+        }
+        .brand-icon-qrlab { color: #6b1a2a; }
     </style>
 </head>
 <body>
-
     <div class="container d-flex justify-content-center px-4">
         <div class="card login-card p-4 p-sm-5">
             <div class="text-center mb-4">
@@ -50,7 +60,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold fs-5 shadow-sm">
+                <button type="submit" class="btn btn-qrlab w-100 py-2 fw-bold fs-5 shadow-sm">
                     Ingresar <i class="fa-solid fa-arrow-right ms-1"></i>
                 </button>
             </form>

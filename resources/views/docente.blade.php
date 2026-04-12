@@ -8,21 +8,48 @@
     <script src="https://kit.fontawesome.com/55416e97e6.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { background-color: #f4f6f9; }
+        body { background-color: #f4f6f9; display: flex; flex-direction: column; min-height: 100vh; }
         .card { border-radius: 15px; border: none; }
         #qr-container { display: flex; justify-content: center; align-items: center; padding: 20px; background: white; border-radius: 10px; min-height: 250px; }
+        /* Color institucional QR-LAB */
+        .btn-qrlab {
+            background-color: #6b1a2a;
+            color: #fff;
+            border: none;
+        }
+        .btn-qrlab:hover, .btn-qrlab:focus {
+            background-color: #52131f;
+            color: #fff;
+        }
+        .text-qrlab { color: #6b1a2a !important; }
+        /* Footer */
+        .footer-qrlab {
+            background-color: #6b1a2a;
+            color: #fff;
+            margin-top: auto;
+        }
+        .footer-qrlab a {
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+        }
+        .footer-qrlab a:hover {
+            color: #fff;
+        }
+        .footer-copyright {
+            background-color: rgba(0,0,0,0.25);
+        }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-primary shadow-sm">
+<nav class="navbar navbar-dark shadow-sm" style="background-color: #6b1a2a;">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-qrcode"></i> QR-LAB Docente</a>
         <div class="d-flex align-items-center">
             <span class="text-white me-3 small"><i class="fa-solid fa-user-tie"></i> {{ $teacher->name }}</span>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button type="submit" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+                <button type="submit" class="btn btn-sm" style="background-color: rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.4);"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
             </form>
         </div>
     </div>
@@ -32,7 +59,7 @@
     <div class="row justify-content-center">
         <div class="col-md-5 mb-4">
             <div class="card shadow-sm h-100 p-4">
-                <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-chalkboard-user"></i> Configurar Clase</h5>
+                <h5 class="fw-bold mb-4 text-qrlab"><i class="fa-solid fa-chalkboard-user"></i> Configurar Clase</h5>
                 
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-muted">Materia y Sección</label>
@@ -56,7 +83,7 @@
                     </select>
                 </div>
 
-                <button id="btn-generar" class="btn btn-primary w-100 fw-bold py-2" onclick="generarQR()">
+                <button id="btn-generar" class="btn btn-qrlab w-100 fw-bold py-2" onclick="generarQR()">
                     <i class="fa-solid fa-qrcode"></i> Generar Código QR
                 </button>
                 
@@ -192,6 +219,49 @@
         }
     }
 </script>
+
+<footer class="footer-qrlab mt-5 pt-5">
+    <div class="container-fluid px-4 pb-4">
+        <div class="row">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h5 class="fw-bold mb-2"><i class="fa-solid fa-qrcode me-2"></i>QR-LAB</h5>
+                <p class="small" style="color:rgba(255,255,255,0.65)">
+                    Educación y control de asistencia en la UTEC<br><br>
+                    La Universidad Tecnológica de El Salvador (UTEC) es una institución comprometida
+                    con la excelencia académica y la innovación tecnológica.
+                </p>
+            </div>
+            <div class="col-md-2 mb-4 mb-md-0">
+                <h6 class="fw-bold mb-3">Información</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-1"><a href="#">Portal Educativo</a></li>
+                    <li class="mb-1"><a href="#">Biblioteca UTEC</a></li>
+                    <li class="mb-1"><a href="#">Calendario Académico</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h6 class="fw-bold mb-3">Contáctanos</h6>
+                <p class="small" style="color:rgba(255,255,255,0.65)">
+                    <i class="fa-solid fa-location-dot me-1"></i> Dirección de Educación Virtual. Edificio José Martí 2do y 3er. nivel<br>
+                    <i class="fa-solid fa-phone me-1"></i> Teléfono: (503) 2275 8888 ext: 8816, 8773, 8797, 8850<br>
+                    <i class="fa-solid fa-envelope me-1"></i> utecvirtual@utec.edu.sv
+                </p>
+            </div>
+            <div class="col-md-2">
+                <h6 class="fw-bold mb-3">Síguenos</h6>
+                <div class="d-flex gap-3 fs-4">
+                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-copyright text-center py-2 small" style="color:rgba(255,255,255,0.55)">
+        Copyright &copy; 2026 - QR-LAB Sistema de Control de Asistencia
+    </div>
+</footer>
 
 </body>
 </html>

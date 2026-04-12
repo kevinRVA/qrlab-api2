@@ -5,6 +5,8 @@ use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\AttendanceWebController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\LabQrController;
 
 // Rutas Públicas
 Route::get('/', function () {
@@ -57,12 +59,23 @@ Route::middleware('auth')->group(function () {
         Route::post('/docente/sesion', [TeacherController::class, 'createSession'])->middleware('role:teacher');
 
         // PANEL ESTUDIANTE: Solo entra si el rol es 'student'
-        Route::get('/perfil', function () {
-            return "Bienvenido Estudiante. Escanea un QR para tu asistencia.";
-        })->middleware('role:student');
+        Route::get('/perfil', [StudentController::class, 'index'])->name('student.perfil')->middleware('role:student');
 
         // LA RUTA MÁGICA DEL CÓDIGO QR (Esta la dejamos solo con 'auth' porque el controlador ya valida que sea estudiante)
         Route::get('/asistencia/{token}', [AttendanceWebController::class, 'registrar'])->name('asistencia.registrar');
+
+        // === ASISTENCIA VOLUNTARIA POR LABORATORIO ===
+        // QR estático de cada laboratorio (estudiante escanea para entrada/salida)
+        Route::get('/lab-qr/{token}', [LabQrController::class, 'scan'])->name('lab.qr.scan');
+
+        // API Admin: listado de visitas voluntarias (JSON)
+        Route::get('/api/admin/lab-visitas', [AdminController::class, 'getLabVisitasApi'])->middleware('role:admin');
+
+        // API Admin: listado de laboratorios con sus tokens
+        Route::get('/api/admin/labs', [AdminController::class, 'getLabsApi'])->middleware('role:admin');
+
+        // Admin: página de impresión del QR de un laboratorio
+        Route::get('/admin/lab-qr/{id}/imprimir', [AdminController::class, 'printLabQr'])->name('admin.lab.imprimir')->middleware('role:admin');
     });
     // PANEL DOCENTE
     Route::get('/docente', [TeacherController::class, 'index'])->name('docente.index')->middleware('role:teacher');

@@ -11,6 +11,9 @@
     <style>
         body {
             background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .card {
@@ -23,7 +26,7 @@
         }
 
         .stat-card {
-            border-left: 5px solid #0d6efd;
+            border-left: 5px solid #6b1a2a;
         }
 
         .chart-container {
@@ -41,35 +44,63 @@
         .cursor-pointer:hover {
             background-color: #e9ecef !important;
         }
+
+
+        /* Navbar y footer color institucional */
+        .navbar-qrlab {
+            background-color: #6b1a2a !important;
+        }
+        .btn-qrlab {
+            background-color: #6b1a2a;
+            color: #fff;
+            border: none;
+        }
+        .btn-qrlab:hover, .btn-qrlab:focus {
+            background-color: #52131f;
+            color: #fff;
+        }
+        .text-qrlab { color: #6b1a2a !important; }
+        .footer-qrlab {
+            background-color: #6b1a2a;
+            color: #fff;
+            margin-top: auto;
+        }
+        .footer-qrlab a {
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+        }
+        .footer-qrlab a:hover {
+            color: #fff;
+        }
+        .footer-copyright {
+            background-color: rgba(0,0,0,0.25);
+        }
     </style>
 </head>
 
 <body>
 
-<nav class="navbar navbar-dark bg-dark shadow-sm">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand" href="#">
-                <i class="fa-solid fa-chart-pie"></i> <strong>QR-LAB</strong> | Panel de Administración
-            </a>
-            
-            <div class="d-flex align-items-center">
-                <span class="text-light me-3 small d-none d-md-inline">
-                    <i class="fa-solid fa-shield-halved text-primary"></i> {{ Auth::user()->name }}
-                </span>
-                
-                <button class="btn btn-outline-light btn-sm me-2" onclick="cargarDatos()">
-                    <i class="fa-solid fa-rotate-right"></i> <span class="d-none d-sm-inline">Actualizar</span>
+<nav class="navbar navbar-dark shadow-sm" style="background-color: #6b1a2a;">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand" href="#">
+            <i class="fa-solid fa-chart-pie"></i> <strong>QR-LAB</strong> | Panel de Administración
+        </a>
+        <div class="d-flex align-items-center">
+            <span class="text-light me-3 small d-none d-md-inline">
+                <i class="fa-solid fa-shield-halved" style="color:#e8a0b4;"></i> {{ Auth::user()->name }}
+            </span>
+            <button class="btn btn-outline-light btn-sm me-2" onclick="cargarDatos()">
+                <i class="fa-solid fa-rotate-right"></i> <span class="d-none d-sm-inline">Actualizar</span>
+            </button>
+            <form action="{{ route('logout') }}" method="POST" class="m-0">
+                @csrf
+                <button type="submit" class="btn btn-sm" style="background-color: rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.4);">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span class="d-none d-sm-inline">Salir</span>
                 </button>
-
-                <form action="{{ route('logout') }}" method="POST" class="m-0">
-                    @csrf
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="fa-solid fa-right-from-bracket"></i> <span class="d-none d-sm-inline">Salir</span>
-                    </button>
-                </form>
-            </div>
+            </form>
         </div>
-    </nav>
+    </div>
+</nav>
 
     <div class="container-fluid mt-4 px-4 pb-5">
 
@@ -119,8 +150,8 @@
                 <div class="card shadow-sm stat-card h-100">
                     <div class="card-body d-flex flex-column justify-content-center text-center">
                         <h6 class="text-muted mb-1">Total Alumnos (Filtrados)</h6>
-                        <h2 class="text-primary fw-bold mb-2" id="total-alumnos-filtrados">0</h2>
-                        <button class="btn btn-success btn-sm" onclick="descargarExcelGlobal()">
+                        <h2 class="text-qrlab fw-bold mb-2" id="total-alumnos-filtrados">0</h2>
+                        <button class="btn btn-qrlab btn-sm" onclick="descargarExcelGlobal()">
                             <i class="fa-solid fa-file-excel"></i> Descargar Resumen
                         </button>
                     </div>
@@ -213,6 +244,91 @@
         </div>
     </div>
 
+    {{-- ================================================================== --}}
+    {{-- SECCIÓN: ACCESO VOLUNTARIO A LABORATORIOS                          --}}
+    {{-- ================================================================== --}}
+    <div class="container-fluid px-4 pb-5 mt-5" id="seccion-lab-acceso">
+
+        {{-- Encabezado de sección --}}
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="width:5px; height:28px; background:#6b1a2a; border-radius:3px;"></div>
+            <h5 class="mb-0 fw-bold text-dark">
+                <i class="fa-solid fa-door-open text-qrlab me-1"></i>
+                Acceso Voluntario a Laboratorios
+            </h5>
+            <span class="badge ms-2" style="background:#6b1a2a;" id="badge-visitas-hoy">0 visitas hoy</span>
+        </div>
+
+        {{-- Filtros + botones de QR --}}
+        <div class="row g-3 mb-3">
+            <div class="col-md-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body py-3">
+                        <h6 class="text-muted mb-3"><i class="fa-solid fa-filter"></i> Filtros</h6>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label small mb-1">Laboratorio</label>
+                                <select id="filtro-lab-visitas" class="form-select form-select-sm" onchange="cargarVisitas()">
+                                    <option value="TODOS">Todos los laboratorios</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small mb-1">Fecha</label>
+                                <input type="date" id="filtro-fecha-visitas" class="form-control form-control-sm"
+                                    value="{{ date('Y-m-d') }}" onchange="cargarVisitas()">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFiltrosVisitas()">
+                                    <i class="fa-solid fa-rotate-left"></i> Hoy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body py-3">
+                        <h6 class="text-muted mb-2"><i class="fa-solid fa-qrcode"></i> QR por Laboratorio</h6>
+                        <div id="lista-qr-labs" style="max-height:100px; overflow-y:auto;">
+                            <span class="text-muted small">Cargando labs...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tabla de visitas --}}
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 text-dark">
+                    <i class="fa-solid fa-clipboard-list text-qrlab"></i>
+                    Registro de Visitas
+                </h6>
+            </div>
+            <div class="card-body p-0 table-responsive" style="max-height:420px; overflow-y:auto;">
+                <table class="table table-hover mb-0 align-middle" style="font-size:0.875rem;">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Carnet</th>
+                            <th>Nombre</th>
+                            <th>Laboratorio</th>
+                            <th class="text-center">Entrada</th>
+                            <th class="text-center">Salida</th>
+                            <th class="text-center">Duración</th>
+                            <th class="text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-visitas-lab">
+                        <tr><td colspan="7" class="text-center py-4 text-muted">Cargando registros...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    {{-- FIN SECCIÓN LAB --}}
+
     <script>
         let todasLasSesiones = [];
         let sesionesFiltradas = [];
@@ -228,6 +344,7 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             cargarDatos();
+            cargarLabsYVisitas();  // === NUEVO: seción labs ===
         });
 
         // 1. Extraer datos
@@ -527,7 +644,161 @@
                 }
             });
         }
+
+        // ================================================================
+        // JAVASCRIPT — SECCIÓN ACCESO VOLUNTARIO A LABORATORIOS
+        // ================================================================
+
+        let todosLosLabs = [];
+
+        async function cargarLabsYVisitas() {
+            try {
+                const resp = await fetch('/api/admin/labs');
+                todosLosLabs = await resp.json();
+
+                // Llenar el select de filtro
+                const sel = document.getElementById('filtro-lab-visitas');
+                sel.innerHTML = '<option value="TODOS">Todos los laboratorios</option>';
+                todosLosLabs.forEach(l => {
+                    sel.innerHTML += `<option value="${l.id}">${l.name}</option>`;
+                });
+
+                // Llenar la lista de botones de QR
+                const listaQr = document.getElementById('lista-qr-labs');
+                if (todosLosLabs.length === 0) {
+                    listaQr.innerHTML = '<span class="text-muted small">No hay laboratorios configurados.</span>';
+                } else {
+                    listaQr.innerHTML = todosLosLabs.map(l =>
+                        l.qr_token
+                        ? `<a href="${l.print_url}" target="_blank" class="badge me-1 mb-1 text-decoration-none"
+                              style="background:#6b1a2a; color:#fff; padding:0.3rem 0.55rem; border-radius:6px; font-size:0.72rem;">
+                              <i class="fa-solid fa-qrcode"></i> ${l.name}
+                           </a>`
+                        : `<span class="badge bg-secondary me-1 mb-1" style="font-size:0.72rem;">${l.name} (sin QR)</span>`
+                    ).join('');
+                }
+
+                // Cargar las visitas de hoy
+                await cargarVisitas();
+
+            } catch (err) {
+                console.error('Error al cargar labs:', err);
+            }
+        }
+
+        async function cargarVisitas() {
+            const labId   = document.getElementById('filtro-lab-visitas').value;
+            const fecha   = document.getElementById('filtro-fecha-visitas').value;
+
+            let url = '/api/admin/lab-visitas?';
+            if (labId !== 'TODOS') url += `lab_id=${labId}&`;
+            if (fecha) url += `fecha=${fecha}`;
+
+            const tbody = document.getElementById('tabla-visitas-lab');
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i>Cargando...</td></tr>';
+
+            try {
+                const resp = await fetch(url);
+                const visitas = await resp.json();
+
+                document.getElementById('badge-visitas-hoy').textContent = `${visitas.length} visita(s)`;
+
+                if (visitas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No hay registros para los filtros seleccionados.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = visitas.map(v => {
+                    // Badge de estado
+                    let estadoBadge;
+                    if (v.no_exit_warning) {
+                        estadoBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:0.72rem;">
+                                          <i class="fa-solid fa-triangle-exclamation"></i> Sin salida (auto)
+                                       </span>`;
+                    } else if (v.exit_time) {
+                        estadoBadge = `<span class="badge" style="background:#dcfce7; color:#166534; border:1px solid #86efac; font-size:0.72rem;">
+                                          <i class="fa-solid fa-circle-check"></i> Completa
+                                       </span>`;
+                    } else {
+                        estadoBadge = `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; font-size:0.72rem;">
+                                          <i class="fa-solid fa-spinner fa-spin"></i> En laboratorio
+                                       </span>`;
+                    }
+
+                    const salida   = v.exit_time  || '<span class="text-muted">—</span>';
+                    const duracion = v.duracion    || '<span class="text-muted">—</span>';
+
+                    return `
+                    <tr>
+                        <td class="fw-bold" style="color:#6b1a2a;">${v.carnet}</td>
+                        <td>${v.nombre}</td>
+                        <td><span class="badge bg-light text-dark border" style="font-size:0.78rem;">${v.laboratorio}</span></td>
+                        <td class="text-center fw-bold">${v.entry_time}</td>
+                        <td class="text-center">${salida}</td>
+                        <td class="text-center">${duracion}</td>
+                        <td class="text-center">${estadoBadge}</td>
+                    </tr>`;
+                }).join('');
+
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar los datos.</td></tr>';
+                console.error(err);
+            }
+        }
+
+        function resetFiltrosVisitas() {
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('filtro-fecha-visitas').value = hoy;
+            document.getElementById('filtro-lab-visitas').value   = 'TODOS';
+            cargarVisitas();
+        }
+
     </script>
+
+
+
+<footer class="footer-qrlab mt-5 pt-5">
+    <div class="container-fluid px-4 pb-4">
+        <div class="row">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h5 class="fw-bold mb-2"><i class="fa-solid fa-qrcode me-2"></i>QR-LAB</h5>
+                <p class="small" style="color:rgba(255,255,255,0.65)">
+                    Educación y control de asistencia en la UTEC<br><br>
+                    La Universidad Tecnológica de El Salvador (UTEC) es una institución comprometida
+                    con la excelencia académica y la innovación tecnológica.
+                </p>
+            </div>
+            <div class="col-md-2 mb-4 mb-md-0">
+                <h6 class="fw-bold mb-3">Información</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-1"><a href="#">Portal Educativo</a></li>
+                    <li class="mb-1"><a href="#">Biblioteca UTEC</a></li>
+                    <li class="mb-1"><a href="#">Calendario Académico</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h6 class="fw-bold mb-3">Contáctanos</h6>
+                <p class="small" style="color:rgba(255,255,255,0.65)">
+                    <i class="fa-solid fa-location-dot me-1"></i> Dirección de Educación Virtual. Edificio José Martí 2do y 3er. nivel<br>
+                    <i class="fa-solid fa-phone me-1"></i> Teléfono: (503) 2275 8888 ext: 8816, 8773, 8797, 8850<br>
+                    <i class="fa-solid fa-envelope me-1"></i> utecvirtual@utec.edu.sv
+                </p>
+            </div>
+            <div class="col-md-2">
+                <h6 class="fw-bold mb-3">Síguenos</h6>
+                <div class="d-flex gap-3 fs-4">
+                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-copyright text-center py-2 small" style="color:rgba(255,255,255,0.55)">
+        Copyright &copy; 2026 - QR-LAB Sistema de Control de Asistencia
+    </div>
+</footer>
 
 </body>
 
