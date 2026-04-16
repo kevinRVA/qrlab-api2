@@ -20,7 +20,15 @@ class TeacherController extends Controller
         $sections = Section::with('subject')->where('teacher_id', $teacher->id)->get();
         $laboratories = Laboratory::all();
 
-        return view('docente.index', compact('teacher', 'sections', 'laboratories'));
+        // Buscamos sesiones activas que este profesor haya olvidado cerrar
+        $activeSessions = Session::with(['section.subject'])
+            ->whereHas('section', function($q) use ($teacher) {
+                $q->where('teacher_id', $teacher->id);
+            })
+            ->where('is_active', true)
+            ->get();
+
+        return view('docente.index', compact('teacher', 'sections', 'laboratories', 'activeSessions'));
     }
 
     // Crea la sesión en la base de datos y devuelve la URL para el QR

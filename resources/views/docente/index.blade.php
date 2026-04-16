@@ -90,6 +90,51 @@
         </div>
 
     </div>
+
+    {{-- Active Sessions Warning Box --}}
+    @if(isset($activeSessions) && $activeSessions->count() > 0)
+    <div class="row justify-content-center mt-2">
+        <div class="col-md-10 mb-4">
+            <div class="card shadow-sm p-4 border-warning fade-in" style="border-left: 5px solid #ffca2c;">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="fa-solid fa-triangle-exclamation text-warning"></i> Tienes sesiones abiertas
+                </h5>
+                <p class="small text-muted mb-3">
+                    Las siguientes sesiones no fueron finalizadas. Ciérralas para invalidar los códigos QR de asistencia.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Materia</th>
+                                <th>Laboratorio</th>
+                                <th>Fecha de creación</th>
+                                <th class="text-end">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($activeSessions as $session)
+                            <tr id="row-session-{{ $session->id }}">
+                                <td>{{ $session->section->subject->name }} (Sec: {{ $session->section->section_code ?? '' }})</td>
+                                <td>{{ $session->laboratory_name }}</td>
+                                <td>{{ $session->created_at->format('d/m/Y h:i A') }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-info text-white me-1" onclick="restaurarSesion({{ $session->id }}, '{{ $session->section_id }}', '{{ $session->laboratory_name }}', '{{ url('/asistencia/' . $session->qr_token) }}')">
+                                        <i class="fa-solid fa-qrcode"></i> Ver QR
+                                    </button>
+                                    <button class="btn btn-sm btn-danger custom-btn-close-session" onclick="cerrarSesionExterna({{ $session->id }}, this)">
+                                        <i class="fa-solid fa-stop"></i> Cerrar
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection
 
@@ -154,6 +199,39 @@
         }
     }
 
+    // Función para mostrar el QR de una clase olvidada
+    function restaurarSesion(sessionId, sectionId, labName, qrUrl) {
+        // Restaurar e inutilizar los selects
+        document.getElementById('select-section').value = sectionId;
+        document.getElementById('select-lab').value = labName;
+        document.getElementById('select-section').disabled = true;
+        document.getElementById('select-lab').disabled = true;
+        
+        currentSessionId = sessionId;
+
+        // Dibujar el QR
+        document.getElementById('qr-placeholder').style.display = 'none';
+        document.getElementById('qrcode').innerHTML = '';
+
+        new QRCode(document.getElementById("qrcode"), {
+            text: qrUrl,
+            width: 200, height: 200,
+            colorDark: "#000000", colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        const linkPrueba = document.getElementById('link-prueba');
+        linkPrueba.href = qrUrl;
+        linkPrueba.classList.remove('d-none');
+
+        // Mostrar boton de finalizar
+        document.getElementById('btn-generar').classList.add('d-none');
+        document.getElementById('btn-finalizar').classList.remove('d-none');
+        
+        // Scroll animado hacia el bloque superior
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     async function finalizarClase() {
         if (!currentSessionId) return;
 
@@ -174,20 +252,8 @@
             const data = await response.json();
 
             if (data.success) {
-                document.getElementById('qrcode').innerHTML = '';
-                document.getElementById('qr-placeholder').style.display = 'block';
-                document.getElementById('link-prueba').classList.add('d-none');
-
-                document.getElementById('btn-generar').classList.remove('d-none');
-                btnFinalizar.classList.add('d-none');
-
-                document.getElementById('select-section').disabled = false;
-                document.getElementById('select-lab').disabled = false;
-                document.getElementById('select-section').value = '';
-                document.getElementById('select-lab').value = '';
-
-                currentSessionId = null;
                 alert('La clase ha sido finalizada. El código QR ya no es válido.');
+                location.reload(); // Recargar la vista para que desaparezca de las sesiones abiertas limpiamente
             }
         } catch (error) {
             console.error(error);
@@ -195,6 +261,44 @@
         } finally {
             btnFinalizar.innerHTML = '<i class="fa-solid fa-stop"></i> Finalizar Clase';
             btnFinalizar.disabled = false;
+        }
+    }
+
+    // Funcionalidad para cerrar sesiones pasadas olvidadas
+    async function cerrarSesionExterna(sessionId, btn) {
+        if (!confirm("¿Seguro que deseas cerrar esta sesión?")) return;
+        
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/docente/sesion/finalizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                btn.closest('tr').remove();
+                if (document.querySelectorAll('.custom-btn-close-session').length === 0) {
+                    location.reload();
+                }
+            } else {
+                alert('No se pudo cerrar la sesión.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error de conexión.');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     }
 </script>

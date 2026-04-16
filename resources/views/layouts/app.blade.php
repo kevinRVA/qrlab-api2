@@ -122,14 +122,11 @@
                     <i class="fa-solid @yield('user_icon', 'fa-circle-user')" style="color: var(--qr-accent);"></i>
                     {{ Auth::user()->name }}
                 </span>
-                <form action="{{ route('logout') }}" method="POST" class="m-0">
-                    @csrf
-                    <button type="submit" class="btn btn-sm"
-                        style="background-color: rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.4);">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        <span class="d-none d-sm-inline"> Salir</span>
-                    </button>
-                </form>
+                <a href="{{ route('logout') }}" class="btn btn-sm"
+                    style="background-color: rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.4);">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span class="d-none d-sm-inline"> Salir</span>
+                </a>
             @endauth
         </div>
     </div>
@@ -189,6 +186,31 @@
 
 {{-- Scripts adicionales por vista --}}
 @stack('scripts')
+
+@auth
+<script>
+    // Inactividad para cerrar sesión automáticamente
+    (function() {
+        let timeout;
+        // Tiempo de expiración configurado (menos 1 minuto por seguridad)
+        const timeoutMs = ({{ config('session.lifetime') ?: 120 }} * 60 * 1000) - 60000;
+        
+        function restartTimer() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                window.location.href = "{{ route('logout') }}";
+            }, timeoutMs > 0 ? timeoutMs : 300000); // Mínimo 5 minutos por fallback
+        }
+
+        window.onload = restartTimer;
+        document.onmousemove = restartTimer;
+        document.onkeypress = restartTimer;
+        document.ontouchstart = restartTimer;
+        document.onclick = restartTimer;
+        document.onscroll = restartTimer;
+    })();
+</script>
+@endauth
 
 </body>
 </html>

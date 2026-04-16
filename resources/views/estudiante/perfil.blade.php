@@ -118,7 +118,7 @@
     .badge-presente {
         background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;
         padding: 0.25rem 0.7rem; border-radius: 20px;
-        font-size: 0.75rem; font-weight: 600;
+        font-size: 0.75rem; font-weight: 600; white-space: nowrap;
     }
 
     /* ── Empty state ── */
@@ -400,15 +400,15 @@
                                 </td>
                                 <td class="text-center">
                                     @if($visita->no_exit_warning)
-                                        <span style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:0.25rem 0.6rem; border-radius:20px; font-size:0.73rem; font-weight:600;">
+                                        <span style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:0.25rem 0.6rem; border-radius:20px; font-size:0.73rem; font-weight:600; white-space:nowrap;">
                                             <i class="fa-solid fa-triangle-exclamation me-1"></i>Sin salida
                                         </span>
                                     @elseif($visita->exit_time)
-                                        <span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:0.25rem 0.6rem; border-radius:20px; font-size:0.73rem; font-weight:600;">
+                                        <span style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:0.25rem 0.6rem; border-radius:20px; font-size:0.73rem; font-weight:600; white-space:nowrap;">
                                             <i class="fa-solid fa-circle-check me-1"></i>Completa
                                         </span>
                                     @else
-                                        <span style="background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; padding:0.25rem 0.6rem; border-radius:20px; font-size:0.73rem; font-weight:600;">
+                                        <span style="background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; padding:0.25rem 0.6rem; border-radius:20px; font-size:0.73rem; font-weight:600; white-space:nowrap;">
                                             <i class="fa-solid fa-spinner fa-spin me-1"></i>En lab
                                         </span>
                                     @endif

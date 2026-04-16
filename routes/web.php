@@ -27,7 +27,7 @@ Route::post('/login', [WebAuthController::class, 'login']);
 Route::middleware('auth')->group(function () {
 
     // Cerrar sesión
-    Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
+    Route::match(['get', 'post'], '/logout', [WebAuthController::class, 'logout'])->name('logout');
 
     // ── Asistencia por QR de clase (docente genera QR, estudiante escanea) ─
     Route::get('/asistencia/{token}', [AttendanceWebController::class, 'registrar'])
