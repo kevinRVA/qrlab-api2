@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\Laboratory;
 use App\Models\LabVisit;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -205,5 +206,60 @@ class AdminController extends Controller
         $qrUrl = url('/lab-qr/' . $lab->qr_token);
 
         return view('lab.imprimir-qr', compact('lab', 'qrUrl'));
+    }
+
+    // =====================================================================
+    // FINALIZAR VISITA (admin cierra una práctica libre abierta)
+    // =====================================================================
+
+    /**
+     * Finaliza una visita abierta: registra exit_time = ahora y auto_closed = true.
+     * POST /api/admin/lab-visitas/{id}/finalizar
+     */
+    public function finalizarVisita($id)
+    {
+        $visita = LabVisit::find($id);
+
+        if (!$visita) {
+            return response()->json(['ok' => false, 'mensaje' => 'Visita no encontrada.'], 404);
+        }
+
+        if ($visita->exit_time) {
+            return response()->json(['ok' => false, 'mensaje' => 'Esta visita ya fue finalizada.'], 422);
+        }
+
+        $visita->update([
+            'exit_time'   => Carbon::now(),
+            'auto_closed' => true,
+        ]);
+
+        return response()->json(['ok' => true, 'mensaje' => 'Visita finalizada correctamente.']);
+    }
+
+    // =====================================================================
+    // ALERTAS: ESTUDIANTES CON 3+ CIERRES AUTOMÁTICOS
+    // =====================================================================
+
+    /**
+     * Devuelve los estudiantes con 3 o más visitas cerradas automáticamente.
+     * GET /api/admin/alertas-cierre-auto
+     */
+    public function getAlertasCierreAutoApi()
+    {
+        $alertas = DB::table('lab_visits')
+            ->join('users', 'lab_visits.student_id', '=', 'users.id')
+            ->select(
+                'users.id as student_id',
+                'users.name as nombre',
+                'users.user_code as carnet',
+                DB::raw('COUNT(*) as total_cierres')
+            )
+            ->where('lab_visits.auto_closed', true)
+            ->groupBy('users.id', 'users.name', 'users.user_code')
+            ->having('total_cierres', '>=', 3)
+            ->orderByDesc('total_cierres')
+            ->get();
+
+        return response()->json($alertas);
     }
 }

@@ -42,6 +42,41 @@
     }
     .section-breadcrumb a { color: var(--qr-primary); text-decoration: none; font-weight: 500; }
     .section-breadcrumb a:hover { text-decoration: underline; }
+
+    /* Modal de descarga */
+    #modal-descarga .modal-content {
+        border-radius: 18px;
+        border: none;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(107,26,42,0.2);
+    }
+    #modal-descarga .modal-header {
+        background: linear-gradient(135deg, #166534, #15803d);
+        color: #fff;
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #modal-descarga .modal-header .btn-close { filter: invert(1); }
+    .filtro-chip {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        background: #f0fdf4; color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 20px; padding: 0.3rem 0.75rem;
+        font-size: 0.8rem; font-weight: 500;
+    }
+    .filtro-chip.activo {
+        background: #dcfce7; border-color: #86efac; font-weight: 600;
+    }
+    .filtro-chip.inactivo {
+        background: #f8fafc; color: #94a3b8; border-color: #e2e8f0;
+    }
+    .btn-confirmar-descarga {
+        background: linear-gradient(135deg, #166534, #15803d);
+        color: #fff; border: none; border-radius: 10px;
+        padding: 0.6rem 1.5rem; font-weight: 600;
+        transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    .btn-confirmar-descarga:hover { opacity: 0.9; transform: scale(1.02); color: #fff; }
 </style>
 @endpush
 
@@ -181,6 +216,58 @@
         </div>
     </div>
 </div>
+
+{{-- ═══════════════════════════════════════════════════════════════
+     MODAL DE CONFIRMACIÓN DE DESCARGA
+══════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="modal-descarga" tabindex="-1" aria-labelledby="modal-descarga-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;
+                                display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="modal-descarga-label">Confirmar Descarga</h5>
+                        <p class="mb-0" style="font-size:0.75rem;opacity:0.8;">Revisa los filtros antes de descargar</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                {{-- Descripción --}}
+                <p class="text-muted mb-3" style="font-size:0.875rem;" id="modal-desc-texto">
+                    Estás a punto de descargar el reporte con los siguientes filtros aplicados:
+                </p>
+
+                {{-- Chips de filtros --}}
+                <div class="d-flex flex-wrap gap-2 mb-4" id="modal-filtros-chips"></div>
+
+                {{-- Resumen de datos --}}
+                <div style="background:#f8fafc;border-radius:12px;padding:1rem 1.25rem;border:1px solid #e2e8f0;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-success"></i>
+                        <span style="font-size:0.875rem;color:#374151;">Registros a exportar:</span>
+                        <strong id="modal-total-registros" class="ms-auto" style="color:var(--qr-primary);font-size:1.1rem;">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="background:#fafafa;border-top:1px solid #f1f5f9;padding:0.75rem 1.25rem;">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                </button>
+                <button type="button" class="btn-confirmar-descarga" id="btn-confirmar-dl" onclick="ejecutarDescarga()">
+                    <i class="fa-solid fa-download me-1"></i> Sí, Descargar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -279,7 +366,9 @@
             });
             const botonDescarga = sesion.is_active
                 ? `<span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin"></i> Activa</span>`
-                : `<a href="/api/admin/descargar-reporte/${sesion.id}" class="btn btn-sm btn-outline-primary" title="Descargar Lista"><i class="fa-solid fa-download"></i></a>`;
+                : `<button class="btn btn-sm btn-outline-primary" title="Descargar Lista"
+                    onclick="confirmarDescargaIndividual(${sesion.id}, '${sesion.subject.replace(/'/g, "\\'")}',' ${new Date(sesion.created_at).toLocaleDateString('es-ES')}')"
+                   ><i class="fa-solid fa-download"></i></button>`;
             tbody.innerHTML += `
             <tr>
                 <td class="small">${fecha}</td>
@@ -347,8 +436,85 @@
         });
     }
 
+    // Descarga global con confirmación
+    let _pendingDescargarFn = null;
+
     function descargarExcelGlobal() {
-        if (sesionesFiltradas.length === 0) { alert("No hay datos para descargar."); return; }
+        if (sesionesFiltradas.length === 0) {
+            toastr.info('No hay datos para descargar con los filtros actuales.', 'Sin datos');
+            return;
+        }
+        abrirModalDescarga();
+    }
+
+    // Descarga individual por sesión con confirmación
+    function confirmarDescargaIndividual(sesionId, materia, fecha) {
+        const modal = new bootstrap.Modal(document.getElementById('modal-descarga'));
+
+        document.getElementById('modal-desc-texto').textContent =
+            'Estás a punto de descargar la lista de asistencia de la siguiente sesión:';
+
+        document.getElementById('modal-filtros-chips').innerHTML = `
+            <span class="filtro-chip activo"><i class="fa-solid fa-book"></i> ${materia}</span>
+            <span class="filtro-chip activo"><i class="fa-regular fa-calendar"></i> ${fecha}</span>
+            <span class="filtro-chip activo" style="background:#ede9fe;color:#7c3aed;border-color:#c4b5fd;">
+                <i class="fa-solid fa-users"></i> Lista completa de alumnos
+            </span>`;
+
+        document.getElementById('modal-total-registros').textContent = 'Lista de asistentes';
+
+        _pendingDescargarFn = () => {
+            window.location.href = `/api/admin/descargar-reporte/${sesionId}`;
+        };
+
+        modal.show();
+    }
+
+    function abrirModalDescarga() {
+        const modal = new bootstrap.Modal(document.getElementById('modal-descarga'));
+
+        // Leer filtros activos
+        const labVal  = document.getElementById('filtro-lab').value;
+        const docVal  = document.getElementById('filtro-docente').value;
+        const matVal  = document.getElementById('filtro-materia').value;
+        const fecVal  = document.getElementById('filtro-fecha').value;
+
+        const chips = [
+            { label: 'Laboratorio', valor: labVal,  icono: 'fa-computer',           defecto: 'TODOS' },
+            { label: 'Docente',     valor: docVal,  icono: 'fa-chalkboard-user',    defecto: 'TODOS' },
+            { label: 'Asignatura',  valor: matVal,  icono: 'fa-book',               defecto: 'TODOS' },
+            { label: 'Fecha',       valor: fecVal,  icono: 'fa-calendar-day',       defecto: '' },
+        ];
+
+        document.getElementById('modal-desc-texto').textContent =
+            'Estás a punto de descargar el resumen de asistencias con los siguientes filtros:';
+
+        document.getElementById('modal-filtros-chips').innerHTML = chips.map(c => {
+            const activo = c.valor && c.valor !== c.defecto;
+            const texto  = activo ? c.valor : 'Todos';
+            return `<span class="filtro-chip ${activo ? 'activo' : 'inactivo'}">
+                        <i class="fa-solid ${c.icono}"></i>
+                        <strong>${c.label}:</strong> ${texto}
+                    </span>`;
+        }).join('');
+
+        const total = sesionesFiltradas.reduce((s, x) => s + x.attendances_count, 0);
+        document.getElementById('modal-total-registros').textContent =
+            `${sesionesFiltradas.length} sesiones / ${total} alumnos`;
+
+        _pendingDescargarFn = ejecutarDescargaGlobal;
+        modal.show();
+    }
+
+    function ejecutarDescarga() {
+        bootstrap.Modal.getInstance(document.getElementById('modal-descarga')).hide();
+        if (_pendingDescargarFn) {
+            setTimeout(_pendingDescargarFn, 250); // Esperar que cierre el modal
+            _pendingDescargarFn = null;
+        }
+    }
+
+    function ejecutarDescargaGlobal() {
         let csv = "\uFEFFecha;Laboratorio;Docente;Asignatura;Seccion;Estado;Total Alumnos\n";
         sesionesFiltradas.forEach(s => {
             const fecha  = new Date(s.created_at).toLocaleString('es-ES');
@@ -359,6 +525,7 @@
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
         link.download = "Asistencia_Clases_QRLAB.csv";
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        toastr.success('Reporte descargado correctamente.', '✓ Descarga lista');
     }
 
     function ordenarTabla(columna) {

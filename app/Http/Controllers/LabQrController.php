@@ -11,8 +11,8 @@ class LabQrController extends Controller
 {
     /**
      * Procesa el escaneo del QR estático de un laboratorio.
-     * Primer escaneo del día  → registra ENTRADA
-     * Segundo escaneo del día → registra SALIDA
+     * Si hay visita abierta → registra SALIDA
+     * Si no hay visita abierta → registra nueva ENTRADA (sin restricción de visitas previas)
      */
     public function scan($token)
     {
@@ -36,10 +36,10 @@ class LabQrController extends Controller
             ]);
         }
 
-        $hoy = Carbon::today();
+        $hoy   = Carbon::today();
         $ahora = Carbon::now();
 
-        // 3. ¿Tiene ya una visita ABIERTA hoy en este laboratorio?
+        // 3. ¿Tiene ya una visita ABIERTA en este laboratorio?
         $visitaAbierta = LabVisit::where('student_id', $user->id)
             ->where('laboratory_id', $lab->id)
             ->whereDate('entry_time', $hoy)
@@ -47,12 +47,10 @@ class LabQrController extends Controller
             ->first();
 
         if ($visitaAbierta) {
-            // — SEGUNDA MARCA: registrar SALIDA —
-            $visitaAbierta->update([
-                'exit_time' => $ahora,
-            ]);
+            // — Registrar SALIDA —
+            $visitaAbierta->update(['exit_time' => $ahora]);
 
-            $duracion = $visitaAbierta->entry_time->diff($ahora);
+            $duracion    = $visitaAbierta->entry_time->diff($ahora);
             $duracionStr = $duracion->h . 'h ' . $duracion->i . 'min';
 
             return view('lab.resultado', [
@@ -65,22 +63,7 @@ class LabQrController extends Controller
             ]);
         }
 
-        // 4. ¿Ya marcó salida hoy en este laboratorio? (visita cerrada hoy)
-        $visitaCerradaHoy = LabVisit::where('student_id', $user->id)
-            ->where('laboratory_id', $lab->id)
-            ->whereDate('entry_time', $hoy)
-            ->whereNotNull('exit_time')
-            ->exists();
-
-        if ($visitaCerradaHoy) {
-            return view('lab.resultado', [
-                'tipo'        => 'error',
-                'mensaje'     => 'Ya registraste tu entrada y salida en este laboratorio hoy. Puedes volver mañana.',
-                'laboratorio' => $lab->name,
-            ]);
-        }
-
-        // — PRIMERA MARCA: registrar ENTRADA —
+        // 4. Registrar nueva ENTRADA — múltiples visitas al mismo lab permitidas
         LabVisit::create([
             'laboratory_id' => $lab->id,
             'student_id'    => $user->id,

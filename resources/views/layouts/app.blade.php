@@ -11,6 +11,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/55416e97e6.js" crossorigin="anonymous"></script>
+    {{-- Toastr --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
     {{-- CDNs opcionales por vista --}}
     @stack('head_scripts')
@@ -144,7 +146,7 @@
             <div class="col-md-4 mb-4 mb-md-0">
                 <h5 class="fw-bold mb-2"><i class="fa-solid fa-qrcode me-2"></i>QR-LAB</h5>
                 <p class="small" style="color:rgba(255,255,255,0.65)">
-                    Educación y control de asistencia en la UTEC<br><br>
+                    Control de asistencia en los laboratorios de la UTEC<br><br>
                     La Universidad Tecnológica de El Salvador (UTEC) es una institución comprometida
                     con la excelencia académica y la innovación tecnológica.
                 </p>
@@ -152,9 +154,9 @@
             <div class="col-md-2 mb-4 mb-md-0">
                 <h6 class="fw-bold mb-3">Información</h6>
                 <ul class="list-unstyled small">
-                    <li class="mb-1"><a href="#">Portal Educativo</a></li>
-                    <li class="mb-1"><a href="#">Biblioteca UTEC</a></li>
-                    <li class="mb-1"><a href="#">Calendario Académico</a></li>
+                    <li class="mb-1"><a href="https://portal.utec.edu.sv/">Portal Educativo</a></li>
+                    <li class="mb-1"><a href="https://biblioteca.utec.edu.sv/web/">Biblioteca UTEC</a></li>
+                    <li class="mb-1"><a href="https://www.utec.edu.sv/Inicio/Catalogos-e-Instructivos/Calendario-Academico">Calendario Académico</a></li>
                 </ul>
             </div>
             <div class="col-md-4 mb-4 mb-md-0">
@@ -168,10 +170,10 @@
             <div class="col-md-2">
                 <h6 class="fw-bold mb-3">Síguenos</h6>
                 <div class="d-flex gap-3 fs-4">
-                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
-                    <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
-                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.facebook.com/universidadtecnologica"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="https://twitter.com/utecedusv"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://api.whatsapp.com/send/?phone=50361000777&text&type=phone_number&app_absent=0"><i class="fa-brands fa-whatsapp"></i></a>
+                    <a href="https://www.instagram.com/nuevoingresoutec/"><i class="fa-brands fa-instagram"></i></a>
                 </div>
             </div>
         </div>
@@ -181,11 +183,27 @@
     </div>
 </footer>
 
-{{-- Scripts de Bootstrap --}}
+{{-- Scripts de Bootstrap + jQuery + Toastr --}}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+    // Configuración global de Toastr
+    toastr.options = {
+        closeButton:       true,
+        progressBar:       true,
+        positionClass:     'toast-top-right',
+        timeOut:           4000,
+        extendedTimeOut:   1500,
+        preventDuplicates: true,
+    };
+</script>
 
 {{-- Scripts adicionales por vista --}}
 @stack('scripts')
+
+{{-- Notificaciones Toastr específicas de la vista --}}
+@stack('toastr')
 
 @auth
 <script>

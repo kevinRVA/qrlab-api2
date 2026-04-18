@@ -38,6 +38,60 @@
     .lab-qr-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
     .table-hover tbody tr:hover { background-color: #f1f5f9; }
+
+    /* Botón finalizar */
+    .btn-finalizar {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.25rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.1s ease;
+        white-space: nowrap;
+    }
+    .btn-finalizar:hover { opacity: 0.85; transform: scale(1.03); color: #fff; }
+    .btn-finalizar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Alerta banner de cierres */
+    .alerta-banner {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border-left: 5px solid #f59e0b;
+        border-radius: 12px;
+        padding: 0.9rem 1.25rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    .alerta-banner i { color: #b45309; font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+
+    /* Modal de descarga */
+    #modal-descarga-pl .modal-content {
+        border-radius: 18px; border: none; overflow: hidden;
+        box-shadow: 0 20px 60px rgba(107,26,42,0.2);
+    }
+    #modal-descarga-pl .modal-header {
+        background: linear-gradient(135deg, #166534, #15803d);
+        color: #fff; border-bottom: none; padding: 1.25rem 1.5rem;
+    }
+    #modal-descarga-pl .modal-header .btn-close { filter: invert(1); }
+    .filtro-chip-pl {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        border-radius: 20px; padding: 0.3rem 0.75rem;
+        font-size: 0.8rem; font-weight: 500;
+    }
+    .filtro-chip-pl.activo  { background: #dcfce7; color: #166534; border: 1px solid #86efac; font-weight: 600; }
+    .filtro-chip-pl.inactivo{ background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; }
+    .btn-confirmar-dl-pl {
+        background: linear-gradient(135deg, #166534, #15803d);
+        color: #fff; border: none; border-radius: 10px;
+        padding: 0.6rem 1.5rem; font-weight: 600;
+        transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    .btn-confirmar-dl-pl:hover { opacity: 0.9; transform: scale(1.02); color: #fff; }
 </style>
 @endpush
 
@@ -51,6 +105,9 @@
         <i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i>
         <span class="fw-semibold text-dark">Prácticas Libres</span>
     </div>
+
+    {{-- Banner de alertas de cierres automáticos (se llena dinámicamente) --}}
+    <div id="contenedor-alertas"></div>
 
     {{-- Encabezado de sección --}}
     <div class="d-flex align-items-center gap-2 mb-4 fade-in">
@@ -133,25 +190,76 @@
                         <th class="text-center">Salida</th>
                         <th class="text-center">Duración</th>
                         <th class="text-center">Estado</th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-visitas-lab">
-                    <tr><td colspan="8" class="text-center py-4 text-muted">Cargando registros...</td></tr>
+                    <tr><td colspan="9" class="text-center py-4 text-muted">Cargando registros...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
 </div>
+
+{{-- ═══════════════════════════════════════════════════════════════
+     MODAL CONFIRMACIÓN DE DESCARGA — PRÁCTICAS LIBRES
+══════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="modal-descarga-pl" tabindex="-1" aria-labelledby="modal-dl-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;
+                                display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="modal-dl-label">Confirmar Descarga</h5>
+                        <p class="mb-0" style="font-size:0.75rem;opacity:0.8;">Revisa los filtros antes de exportar</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-3" style="font-size:0.875rem;">
+                    Estás a punto de exportar el registro de visitas con los siguientes filtros aplicados:
+                </p>
+                <div class="d-flex flex-wrap gap-2 mb-4" id="pl-filtros-chips"></div>
+                <div style="background:#f8fafc;border-radius:12px;padding:1rem 1.25rem;border:1px solid #e2e8f0;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-list text-success"></i>
+                        <span style="font-size:0.875rem;color:#374151;">Registros a exportar:</span>
+                        <strong id="pl-total-registros" class="ms-auto" style="color:var(--qr-primary);font-size:1.1rem;">0</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background:#fafafa;border-top:1px solid #f1f5f9;padding:0.75rem 1.25rem;">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                </button>
+                <button type="button" class="btn-confirmar-dl-pl" onclick="ejecutarDescargaVisitas()">
+                    <i class="fa-solid fa-download me-1"></i> Sí, Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
     let todosLosLabs  = [];
     let visitasCache  = [];
+    const CSRF        = '{{ csrf_token() }}';
 
-    document.addEventListener('DOMContentLoaded', () => cargarLabsYVisitas());
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarLabsYVisitas();
+        verificarAlertasCierreAuto();
+    });
 
+    // ── Carga labs + visitas ──────────────────────────────────────────────
     async function cargarLabsYVisitas() {
         const btn = document.getElementById('btn-actualizar');
         if (btn) {
@@ -162,14 +270,12 @@
             const resp = await fetch('/api/admin/labs');
             todosLosLabs = await resp.json();
 
-            // Llenar el select de filtro
             const sel = document.getElementById('filtro-lab-visitas');
             sel.innerHTML = '<option value="TODOS">Todos los laboratorios</option>';
             todosLosLabs.forEach(l => {
                 sel.innerHTML += `<option value="${l.id}">${l.name}</option>`;
             });
 
-            // Botones de QR
             const listaQr = document.getElementById('lista-qr-labs');
             if (todosLosLabs.length === 0) {
                 listaQr.innerHTML = '<span class="text-muted small">No hay laboratorios configurados.</span>';
@@ -186,6 +292,7 @@
 
             await cargarVisitas();
         } catch (err) {
+            toastr.error('No se pudieron cargar los datos del servidor.', 'Error de conexión');
             console.error('Error al cargar labs:', err);
         } finally {
             if (btn) {
@@ -195,9 +302,9 @@
         }
     }
 
+    // ── Carga visitas ─────────────────────────────────────────────────────
     async function cargarVisitas() {
         const labId = document.getElementById('filtro-lab-visitas').value;
-
         const desde = document.getElementById('filtro-fecha-desde').value;
         const hasta = document.getElementById('filtro-fecha-hasta').value;
 
@@ -207,16 +314,16 @@
         if (hasta) url += `fecha_hasta=${hasta}&`;
 
         const tbody = document.getElementById('tabla-visitas-lab');
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i>Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i>Cargando...</td></tr>';
 
         try {
-            const resp    = await fetch(url);
-            visitasCache  = await resp.json();
+            const resp   = await fetch(url);
+            visitasCache = await resp.json();
 
             document.getElementById('badge-visitas-hoy').textContent = `${visitasCache.length} visita(s)`;
 
             if (visitasCache.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No hay registros para los filtros seleccionados.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No hay registros para los filtros seleccionados.</td></tr>';
                 return;
             }
 
@@ -239,8 +346,15 @@
                 const salida   = v.exit_time || '<span class="text-muted">—</span>';
                 const duracion = v.duracion  || '<span class="text-muted">—</span>';
 
+                // Botón finalizar solo si la visita está abierta
+                const btnFinalizar = !v.exit_time
+                    ? `<button class="btn-finalizar" onclick="finalizarVisita(${v.id}, this)" title="Finalizar sesión">
+                           <i class="fa-solid fa-stop-circle me-1"></i>Finalizar
+                       </button>`
+                    : `<span class="text-muted small">—</span>`;
+
                 return `
-                <tr>
+                <tr id="fila-visita-${v.id}">
                     <td class="text-muted small">${v.fecha ?? '—'}</td>
                     <td class="fw-bold" style="color:var(--qr-primary);">${v.carnet}</td>
                     <td>${v.nombre}</td>
@@ -249,15 +363,91 @@
                     <td class="text-center">${salida}</td>
                     <td class="text-center">${duracion}</td>
                     <td class="text-center">${estadoBadge}</td>
+                    <td class="text-center">${btnFinalizar}</td>
                 </tr>`;
             }).join('');
 
         } catch (err) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar los datos.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error al cargar los datos.</td></tr>';
+            toastr.error('Error al cargar los registros de visitas.', 'Error');
             console.error(err);
         }
     }
 
+    // ── Finalizar visita ──────────────────────────────────────────────────
+    async function finalizarVisita(id, btn) {
+        if (!confirm('¿Estás seguro de finalizar esta sesión? Se registrará la salida ahora mismo.')) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        try {
+            const resp = await fetch(`/api/admin/lab-visitas/${id}/finalizar`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Accept':       'application/json',
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await resp.json();
+
+            if (data.ok) {
+                toastr.success('Sesión finalizada correctamente.', '✓ Visita cerrada');
+                await cargarVisitas(); // Recargar tabla
+            } else {
+                toastr.warning(data.mensaje || 'No se pudo finalizar.', 'Aviso');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-stop-circle me-1"></i>Finalizar';
+            }
+        } catch (err) {
+            toastr.error('Error al conectar con el servidor.', 'Error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-stop-circle me-1"></i>Finalizar';
+            console.error(err);
+        }
+    }
+
+    // ── Verificar alertas de cierres automáticos ──────────────────────────
+    async function verificarAlertasCierreAuto() {
+        try {
+            const resp   = await fetch('/api/admin/alertas-cierre-auto');
+            const alertas = await resp.json();
+
+            const contenedor = document.getElementById('contenedor-alertas');
+            contenedor.innerHTML = '';
+
+            if (alertas.length > 0) {
+                // Banner en la página
+                const listaNombres = alertas.map(a =>
+                    `<li><strong>${a.carnet ?? 'N/A'}</strong> — ${a.nombre} <span class="badge" style="background:#ef4444; color:#fff; border-radius:20px; font-size:0.7rem; padding:0.15rem 0.5rem;">${a.total_cierres} cierres</span></li>`
+                ).join('');
+
+                contenedor.innerHTML = `
+                    <div class="alerta-banner fade-in">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>
+                            <strong style="color:#92400e;">Alerta — Estudiantes con 3 o más cierres automáticos:</strong>
+                            <ul class="mb-0 mt-1 ps-3" style="color:#78350f; font-size:0.875rem;">${listaNombres}</ul>
+                        </div>
+                    </div>`;
+
+                // Toastr por cada alerta (máximo 5 para no saturar)
+                alertas.slice(0, 5).forEach(a => {
+                    toastr.warning(
+                        `<b>${a.carnet ?? ''} — ${a.nombre}</b> tiene <b>${a.total_cierres}</b> cierres automáticos.`,
+                        '⚠️ Alerta de cierre automático',
+                        { timeOut: 6000 }
+                    );
+                });
+            }
+        } catch (err) {
+            console.error('Error al verificar alertas:', err);
+        }
+    }
+
+    // ── Resetear filtros ──────────────────────────────────────────────────
     function resetFiltrosVisitas() {
         const hoy   = new Date();
         const desde = new Date(hoy); desde.setDate(hoy.getDate() - 6);
@@ -267,23 +457,61 @@
         cargarVisitas();
     }
 
+    // ── Exportar CSV con confirmación ────────────────────────────────────────
     function descargarExcelVisitas() {
-        if (visitasCache.length === 0) { alert("No hay datos para exportar."); return; }
+        if (visitasCache.length === 0) {
+            toastr.info('No hay datos para exportar con los filtros actuales.', 'Sin datos');
+            return;
+        }
 
-        const desde = document.getElementById('filtro-fecha-desde').value || '';
-        const hasta = document.getElementById('filtro-fecha-hasta').value || '';
-        const rango = (desde && hasta) ? `${desde}_al_${hasta}` : 'todas';
+        // Rellenar chips de filtros en el modal
+        const labSel  = document.getElementById('filtro-lab-visitas');
+        const labVal  = labSel.value;
+        const labText = labSel.options[labSel.selectedIndex]?.text ?? 'Todos';
+        const desde   = document.getElementById('filtro-fecha-desde').value || '';
+        const hasta   = document.getElementById('filtro-fecha-hasta').value || '';
 
-        let csv = "\uFEFFecha;Carnet;Nombre;Laboratorio;Entrada;Salida;Duración;Estado\n";
-        visitasCache.forEach(v => {
-            const estado = v.no_exit_warning ? 'Sin salida (auto)' : (v.exit_time ? 'Completa' : 'En lab');
-            csv += `"${v.fecha||'—'}";"${v.carnet}";"${v.nombre}";"${v.laboratorio}";"${v.entry_time}";"${v.exit_time||'—'}";"${v.duracion||'—'}";"${estado}"\n`;
-        });
+        const chips = [
+            { label: 'Laboratorio', valor: labVal  !== 'TODOS' ? labText : null, icono: 'fa-computer' },
+            { label: 'Desde',       valor: desde   || null,                       icono: 'fa-calendar-days' },
+            { label: 'Hasta',       valor: hasta   || null,                       icono: 'fa-calendar-check' },
+        ];
 
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-        link.download = `PracticasLibres_${rango}.csv`;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        document.getElementById('pl-filtros-chips').innerHTML = chips.map(c => {
+            const activo = !!c.valor;
+            const texto  = activo ? c.valor : 'Todos';
+            return `<span class="filtro-chip-pl ${activo ? 'activo' : 'inactivo'}">
+                        <i class="fa-solid ${c.icono}"></i>
+                        <strong>${c.label}:</strong> ${texto}
+                    </span>`;
+        }).join('');
+
+        document.getElementById('pl-total-registros').textContent = `${visitasCache.length} visita(s)`;
+
+        // Mostrar modal
+        new bootstrap.Modal(document.getElementById('modal-descarga-pl')).show();
+    }
+
+    function ejecutarDescargaVisitas() {
+        bootstrap.Modal.getInstance(document.getElementById('modal-descarga-pl')).hide();
+
+        setTimeout(() => {
+            const desde = document.getElementById('filtro-fecha-desde').value || '';
+            const hasta = document.getElementById('filtro-fecha-hasta').value || '';
+            const rango = (desde && hasta) ? `${desde}_al_${hasta}` : 'todas';
+
+            let csv = "\uFEFFEcha;Carnet;Nombre;Laboratorio;Entrada;Salida;Duración;Estado\n";
+            visitasCache.forEach(v => {
+                const estado = v.no_exit_warning ? 'Sin salida (auto)' : (v.exit_time ? 'Completa' : 'En lab');
+                csv += `"${v.fecha||'—'}";"${v.carnet}";"${v.nombre}";"${v.laboratorio}";"${v.entry_time}";"${v.exit_time||'—'}";"${v.duracion||'—'}";"${estado}"\n`;
+            });
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `PracticasLibres_${rango}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            toastr.success(`Exportado: PracticasLibres_${rango}.csv`, '\u2713 Descarga lista');
+        }, 300);
     }
 </script>
 @endpush

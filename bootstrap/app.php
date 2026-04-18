@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,12 +14,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        
-        // --- AQUÍ REGISTRAMOS NUESTRO GUARDIA VIP ---
+
+        // ── Confiar en todos los proxies (Railway, Heroku, etc.) ──────────
+        // Railway termina SSL en su proxy y nos envía el tráfico como HTTP,
+        // pero incluye el header X-Forwarded-Proto: https.
+        // Con esto Laravel lo detecta y genera URLs/formularios en HTTPS.
+        $middleware->trustProxies(at: '*');
+
+        // ── Alias de middleware personalizados ────────────────────────────
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
-        // --------------------------------------------
 
     })
     ->withExceptions(function (Exceptions $exceptions) {

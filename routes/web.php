@@ -24,7 +24,7 @@ Route::post('/login', [WebAuthController::class, 'login']);
 | Rutas Protegidas (requieren autenticación)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(function () {
 
     // Cerrar sesión
     Route::match(['get', 'post'], '/logout', [WebAuthController::class, 'logout'])->name('logout');
@@ -62,6 +62,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/admin/descargar-reporte/{id}', [AdminController::class, 'descargarReporte']);
         Route::get('/api/admin/lab-visitas',            [AdminController::class, 'getLabVisitasApi']);
         Route::get('/api/admin/labs',                   [AdminController::class, 'getLabsApi']);
+        Route::post('/api/admin/lab-visitas/{id}/finalizar', [AdminController::class, 'finalizarVisita']);
+        Route::get('/api/admin/alertas-cierre-auto',    [AdminController::class, 'getAlertasCierreAutoApi']);
     });
 
     /*

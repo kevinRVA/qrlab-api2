@@ -554,7 +554,7 @@
             }
 
             let csvContent = "\uFEFF";
-            csvContent += "Fecha;Laboratorio;Docente;Asignatura;Seccion;Estado;Total Alumnos\n";
+            csvContent += " Fecha;Laboratorio;Docente;Asignatura;Seccion;Estado;Total Alumnos\n";
 
             sesionesFiltradas.forEach(s => {
                 const fecha = new Date(s.created_at).toLocaleString('es-ES');

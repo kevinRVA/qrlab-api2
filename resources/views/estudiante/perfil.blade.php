@@ -44,6 +44,24 @@
         font-size: 0.78rem; font-weight: 500; backdrop-filter: blur(4px);
     }
 
+    /* ── Botón abrir cámara en el hero ── */
+    .btn-camara-qr {
+        background: rgba(255,255,255,0.18);
+        border: 1.5px solid rgba(255,255,255,0.5);
+        color: #fff;
+        border-radius: 30px;
+        padding: 0.45rem 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.15s ease;
+        backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-camara-qr:hover { background: rgba(255,255,255,0.28); transform: scale(1.03); color: #fff; }
+
     /* ── Stats mini ── */
     .stat-mini {
         background: #fff; border-radius: 12px; padding: 1.1rem 1.4rem;
@@ -125,6 +143,53 @@
     .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
     .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; opacity: 0.4; }
     .empty-state p { font-size: 0.875rem; margin: 0; }
+
+    /* ── Modal de cámara QR ── */
+    #modal-camara .modal-content {
+        border-radius: 18px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 20px 60px rgba(107,26,42,0.25);
+    }
+    #modal-camara .modal-header {
+        background: linear-gradient(135deg, var(--qr-primary), #9b2d42);
+        color: #fff;
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    #modal-camara .modal-header .btn-close { filter: invert(1); }
+    #modal-camara .modal-body { padding: 0; }
+
+    /* Contenedor del reader */
+    #qr-reader {
+        width: 100%;
+        max-width: 100%;
+    }
+    #qr-reader video { width: 100% !important; }
+
+    .camara-status {
+        text-align: center;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .camara-status.detectando { color: #1e40af; }
+    .camara-status.exito      { color: #166534; background: #f0fdf4; }
+    .camara-status.error-cam  { color: #991b1b; background: #fef2f2; }
+
+    /* Pulso de escaneo */
+    .scan-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border: 3px solid rgba(107,26,42,0.4);
+        border-radius: 6px;
+        animation: scan-pulse 2s infinite;
+    }
+    @keyframes scan-pulse {
+        0%, 100% { border-color: rgba(107,26,42,0.3); }
+        50%       { border-color: rgba(107,26,42,0.8); }
+    }
 </style>
 @endpush
 
@@ -148,9 +213,15 @@
                     @endif
                 </p>
             </div>
-            <span class="student-badge">
-                <i class="fa-solid fa-circle-check me-1" style="color:#86efac;"></i> Estudiante Activo
-            </span>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                {{-- Botón abrir cámara QR --}}
+                <button class="btn-camara-qr" data-bs-toggle="modal" data-bs-target="#modal-camara" id="btn-abrir-camara">
+                    <i class="fa-solid fa-camera"></i> Marcar Asistencia
+                </button>
+                <span class="student-badge">
+                    <i class="fa-solid fa-circle-check me-1" style="color:#86efac;"></i> Estudiante Activo
+                </span>
+            </div>
         </div>
     </div>
 
@@ -313,7 +384,7 @@
         @endif
     </div>
 
-    {{-- Aviso: salidas sin marcar --}}
+    {{-- Aviso: salidas sin marcar (HTML) --}}
     @if($avisosSinSalida > 0)
     <div class="mt-4 fade-in" style="
         background: linear-gradient(135deg, #fef3c7, #fde68a);
@@ -344,7 +415,7 @@
             <div class="empty-state">
                 <i class="fa-solid fa-door-closed"></i>
                 <p>Aún no tienes visitas registradas a laboratorios.<br>
-                    <span style="font-size:0.8rem;">Escanea el QR del laboratorio para registrar tu entrada.</span>
+                    <span style="font-size:0.8rem;">Escanea el QR del laboratorio o usa el botón de cámara para registrar tu entrada.</span>
                 </p>
             </div>
         @else
@@ -422,4 +493,214 @@
     </div>
 
 </div>
+
+{{-- ═══════════════════════════════════════════════════════════════
+     MODAL DE CÁMARA QR
+══════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="modal-camara" tabindex="-1" aria-labelledby="modal-camara-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content">
+
+            {{-- Header --}}
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:10px;
+                                display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0" id="modal-camara-label">Escáner de Asistencia</h5>
+                        <p class="mb-0" style="font-size:0.75rem; opacity:0.75;">Apunta la cámara al código QR</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            {{-- Cuerpo: visor de cámara --}}
+            <div class="modal-body p-0" style="position:relative; background:#000; min-height:300px;">
+                <div id="qr-reader" style="width:100%;"></div>
+
+                {{-- Instrucciones superpuestas --}}
+                <div id="camara-instrucciones" style="
+                    position:absolute; inset:0;
+                    display:flex; flex-direction:column;
+                    align-items:center; justify-content:center;
+                    background:rgba(0,0,0,0.65); color:#fff; text-align:center; padding:2rem;
+                ">
+                    <i class="fa-solid fa-camera" style="font-size:3rem; margin-bottom:1rem; opacity:0.7;"></i>
+                    <p style="font-size:0.9rem; margin:0;">Iniciando cámara...</p>
+                    <p style="font-size:0.75rem; opacity:0.6; margin-top:0.5rem;">Asegúrate de permitir el acceso a la cámara.</p>
+                </div>
+            </div>
+
+            {{-- Estado de detección --}}
+            <div class="camara-status detectando" id="camara-status-text">
+                <i class="fa-solid fa-spinner fa-spin me-1"></i> Esperando cámara...
+            </div>
+
+            {{-- Footer con ayuda --}}
+            <div class="modal-footer" style="background:#fafafa; border-top:1px solid #f1f5f9; padding:0.75rem 1.25rem;">
+                <div style="font-size:0.78rem; color:#64748b;">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Apunta al QR de tu clase o al QR del laboratorio para registrar tu asistencia.
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i> Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 @endsection
+
+{{-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════════════════ --}}
+@push('head_scripts')
+{{-- Librería html5-qrcode --}}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+@endpush
+
+@push('scripts')
+<script>
+// ── Escáner QR ─────────────────────────────────────────────────────────────
+let html5QrCode = null;
+let escaneando  = false;
+
+const modalEl   = document.getElementById('modal-camara');
+const statusEl  = document.getElementById('camara-status-text');
+const instrEl   = document.getElementById('camara-instrucciones');
+
+/**
+ * Inicia el escáner cuando se abre el modal.
+ */
+modalEl.addEventListener('show.bs.modal', () => {
+    iniciarEscaner();
+});
+
+/**
+ * Detiene el escáner cuando se cierra el modal.
+ */
+modalEl.addEventListener('hide.bs.modal', () => {
+    detenerEscaner();
+});
+
+async function iniciarEscaner() {
+    if (escaneando) return;
+
+    setStatus('Iniciando cámara...', 'detectando');
+
+    try {
+        html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+
+        await html5QrCode.start(
+            { facingMode: 'environment' },          // Cámara trasera preferida
+            {
+                fps: 10,
+                qrbox: { width: 260, height: 260 },
+                aspectRatio: 1.0,
+            },
+            onQrDetectado,
+            onQrError
+        );
+
+        escaneando = true;
+        instrEl.style.display = 'none';             // Ocultar instrucciones iniciales
+        setStatus('🔍 Buscando código QR...', 'detectando');
+
+    } catch (err) {
+        console.error('Error al iniciar cámara:', err);
+        instrEl.innerHTML = `
+            <i class="fa-solid fa-camera-slash" style="font-size:2.5rem; margin-bottom:1rem; color:#ef4444;"></i>
+            <p style="color:#fca5a5; font-size:0.9rem; margin:0;">No se pudo acceder a la cámara.</p>
+            <p style="color:#fca5a5; font-size:0.75rem; margin-top:0.5rem; opacity:0.8;">
+                Verifica que tu navegador tiene permiso para usar la cámara.
+            </p>`;
+        instrEl.style.display = 'flex';
+        setStatus('Error al acceder a la cámara.', 'error-cam');
+    }
+}
+
+async function detenerEscaner() {
+    if (html5QrCode && escaneando) {
+        try {
+            await html5QrCode.stop();
+            html5QrCode.clear();
+        } catch (e) {
+            // Ignorar errores al parar
+        }
+        escaneando  = false;
+        html5QrCode = null;
+    }
+}
+
+/**
+ * Callback cuando se detecta un QR válido.
+ */
+function onQrDetectado(decodedText) {
+    // Evitar procesar múltiples veces
+    if (!escaneando) return;
+    escaneando = false;
+
+    setStatus('✓ QR detectado. Redirigiendo...', 'exito');
+    toastr.success('Código QR detectado correctamente.', '✓ QR Escaneado');
+
+    // Detener cámara y redirigir
+    detenerEscaner().then(() => {
+        // Verificar si es una URL del sistema (asistencia o lab-qr)
+        let url = decodedText.trim();
+
+        // Si el QR contiene solo el token (no URL completa), construir la URL
+        if (!url.startsWith('http')) {
+            // Asumir que es un token de laboratorio o sesión
+            url = window.location.origin + '/lab-qr/' + url;
+        }
+
+        // Redirigir a la URL detectada
+        setTimeout(() => {
+            window.location.href = url;
+        }, 800);
+    });
+}
+
+/**
+ * Callback de error de escaneo (se llama constantemente, solo loguear debug).
+ */
+function onQrError(errorMsg) {
+    // No mostrar errores de "no QR found" para no saturar
+}
+
+function setStatus(texto, clase) {
+    statusEl.textContent = texto;
+    statusEl.className   = 'camara-status ' + clase;
+
+    if (clase === 'detectando' && texto.includes('Buscando')) {
+        statusEl.innerHTML = '<i class="fa-solid fa-qrcode me-1"></i> ' + texto;
+    }
+}
+</script>
+@endpush
+
+{{-- ═══════════════════════════════════════════════════════════════
+     TOASTR — Notificaciones al cargar la página
+══════════════════════════════════════════════════════════════════ --}}
+@push('toastr')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    @if($avisosSinSalida > 0)
+        toastr.warning(
+            'Tienes <strong>{{ $avisosSinSalida }}</strong> visita(s) donde no marcaste tu salida. El sistema las cerró automáticamente.',
+            '⚠️ Salidas sin registrar',
+            {
+                timeOut:       8000,
+                extendedTimeOut: 3000,
+                closeButton:   true,
+                progressBar:   true,
+            }
+        );
+    @endif
+});
+</script>
+@endpush
