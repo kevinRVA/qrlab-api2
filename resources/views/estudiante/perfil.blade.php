@@ -638,32 +638,40 @@ async function detenerEscaner() {
 
 /**
  * Callback cuando se detecta un QR válido.
+ * Detiene la cámara INMEDIATAMENTE para evitar registros duplicados.
  */
 function onQrDetectado(decodedText) {
-    // Evitar procesar múltiples veces
+    // Guard: si ya procesamos un QR, ignorar cualquier llamada adicional
     if (!escaneando) return;
-    escaneando = false;
+    escaneando = false;  // Bloquear futuros callbacks ANTES de cualquier await
 
-    setStatus('✓ QR detectado. Redirigiendo...', 'exito');
-    toastr.success('Código QR detectado correctamente.', '✓ QR Escaneado');
+    setStatus('✓ QR detectado. Deteniendo cámara...', 'exito');
 
-    // Detener cámara y redirigir
-    detenerEscaner().then(() => {
-        // Verificar si es una URL del sistema (asistencia o lab-qr)
+    // Capturar la instancia y limpiar el puntero global de inmediato
+    const instancia = html5QrCode;
+    html5QrCode = null;
+
+    (async () => {
+        // Detener cámara antes de redirigir
+        if (instancia) {
+            try {
+                await instancia.stop();
+                instancia.clear();
+            } catch (e) { /* ignorar error al parar */ }
+        }
+
         let url = decodedText.trim();
-
-        // Si el QR contiene solo el token (no URL completa), construir la URL
         if (!url.startsWith('http')) {
-            // Asumir que es un token de laboratorio o sesión
             url = window.location.origin + '/lab-qr/' + url;
         }
 
-        // Redirigir a la URL detectada
-        setTimeout(() => {
-            window.location.href = url;
-        }, 800);
-    });
+        setStatus('✓ Redirigiendo a registro de asistencia...', 'exito');
+        toastr.success('QR detectado. Registrando asistencia...', '✓ QR Escaneado', { timeOut: 2500 });
+
+        setTimeout(() => { window.location.href = url; }, 600);
+    })();
 }
+
 
 /**
  * Callback de error de escaneo (se llama constantemente, solo loguear debug).
@@ -694,12 +702,27 @@ document.addEventListener('DOMContentLoaded', function() {
             'Tienes <strong>{{ $avisosSinSalida }}</strong> visita(s) donde no marcaste tu salida. El sistema las cerró automáticamente.',
             '⚠️ Salidas sin registrar',
             {
-                timeOut:       8000,
+                timeOut:         8000,
                 extendedTimeOut: 3000,
-                closeButton:   true,
-                progressBar:   true,
+                closeButton:     true,
+                progressBar:     true,
             }
         );
+    @endif
+
+    @if($cierresAutoCerrados >= 3)
+        setTimeout(function() {
+            toastr.error(
+                'Tu sesión en prácticas libres ha sido cerrada automáticamente <strong>{{ $cierresAutoCerrados }} veces</strong>. Recuerda escanear el QR al salir del laboratorio.',
+                '🚫 Atención: Cierres automáticos',
+                {
+                    timeOut:         10000,
+                    extendedTimeOut: 4000,
+                    closeButton:     true,
+                    progressBar:     true,
+                }
+            );
+        }, 1200);
     @endif
 });
 </script>

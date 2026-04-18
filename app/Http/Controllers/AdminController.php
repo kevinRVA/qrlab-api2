@@ -44,6 +44,14 @@ class AdminController extends Controller
         return view('admin.practicas-libres');
     }
 
+    /**
+     * Vista: Detalle de alertas de estudiantes con 3+ cierres automáticos.
+     */
+    public function alertasCierre()
+    {
+        return view('admin.alertas-cierre');
+    }
+
     // 1. NUEVA FUNCIÓN: Alimenta la tabla y las gráficas con datos relacionales
     public function getSesionesApi()
     {
@@ -229,8 +237,9 @@ class AdminController extends Controller
         }
 
         $visita->update([
-            'exit_time'   => Carbon::now(),
-            'auto_closed' => true,
+            'exit_time'       => Carbon::now(),
+            'auto_closed'     => true,
+            'no_exit_warning' => true,
         ]);
 
         return response()->json(['ok' => true, 'mensaje' => 'Visita finalizada correctamente.']);
@@ -241,7 +250,9 @@ class AdminController extends Controller
     // =====================================================================
 
     /**
-     * Devuelve los estudiantes con 3 o más visitas cerradas automáticamente.
+     * Alertas ACTIVAS: estudiantes con 3+ visitas auto-cerradas SIN perdonán (no_exit_warning=true).
+     * Cuando el estudiante escanea salida correctamente, no_exit_warning se limpia
+     * y este estudiante deja de aparecer en las alertas.
      * GET /api/admin/alertas-cierre-auto
      */
     public function getAlertasCierreAutoApi()
@@ -252,14 +263,43 @@ class AdminController extends Controller
                 'users.id as student_id',
                 'users.name as nombre',
                 'users.user_code as carnet',
-                DB::raw('COUNT(*) as total_cierres')
+                DB::raw('COUNT(*) as total_cierres'),
+                DB::raw('SUM(CASE WHEN lab_visits.no_exit_warning = true THEN 1 ELSE 0 END) as alertas_activas')
             )
             ->where('lab_visits.auto_closed', true)
             ->groupBy('users.id', 'users.name', 'users.user_code')
             ->having('total_cierres', '>=', 3)
+            ->having('alertas_activas', '>', 0)
             ->orderByDesc('total_cierres')
             ->get();
 
         return response()->json($alertas);
+    }
+
+    /**
+     * Historial completo: ranking de estudiantes que ALGUNA VEZ tuvieron cierres automáticos,
+     * incluyendo los que ya fueron perdonados (para métricas históricas).
+     * GET /api/admin/historial-alertas
+     */
+    public function getHistorialAlertasApi()
+    {
+        $historial = DB::table('lab_visits')
+            ->join('users', 'lab_visits.student_id', '=', 'users.id')
+            ->join('laboratories', 'lab_visits.laboratory_id', '=', 'laboratories.id')
+            ->select(
+                'users.id as student_id',
+                'users.name as nombre',
+                'users.user_code as carnet',
+                DB::raw('COUNT(*) as total_cierres'),
+                DB::raw('SUM(CASE WHEN lab_visits.no_exit_warning = true THEN 1 ELSE 0 END) as alertas_activas'),
+                DB::raw('MAX(lab_visits.entry_time) as ultima_visita')
+            )
+            ->where('lab_visits.auto_closed', true)
+            ->groupBy('users.id', 'users.name', 'users.user_code')
+            ->orderByDesc('total_cierres')
+            ->limit(20)
+            ->get();
+
+        return response()->json($historial);
     }
 }

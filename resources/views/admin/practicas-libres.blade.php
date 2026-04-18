@@ -126,25 +126,30 @@
                 <div class="card-body py-3">
                     <h6 class="text-muted mb-3"><i class="fa-solid fa-filter"></i> Filtros</h6>
                     <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label small mb-1">Laboratorio</label>
                             <select id="filtro-lab-visitas" class="form-select form-select-sm" onchange="cargarVisitas()">
                                 <option value="TODOS">Todos los laboratorios</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small mb-1">Desde</label>
                             <input type="date" id="filtro-fecha-desde" class="form-control form-control-sm"
                                 value="{{ now()->subDays(6)->format('Y-m-d') }}" onchange="cargarVisitas()">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small mb-1">Hasta</label>
                             <input type="date" id="filtro-fecha-hasta" class="form-control form-control-sm"
                                 value="{{ date('Y-m-d') }}" onchange="cargarVisitas()">
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Buscar alumno</label>
+                            <input type="text" id="filtro-busqueda-visitas" class="form-control form-control-sm" 
+                                placeholder="Nombre o carnet..." oninput="filtrarVisitas()">
+                        </div>
                         <div class="col-md-2">
-                            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFiltrosVisitas()" title="Últimos 7 días">
-                                <i class="fa-solid fa-rotate-left"></i> 7 días
+                            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFiltrosVisitas()" title="Cargar ulimos 7 dias de todos los labs">
+                                <i class="fa-solid fa-rotate-left"></i> Limpiar
                             </button>
                         </div>
                     </div>
@@ -197,6 +202,45 @@
                     <tr><td colspan="9" class="text-center py-4 text-muted">Cargando registros...</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    {{-- ── Sección: Métricas Históricas de Cierres Automáticos ── --}}
+    <div class="mt-4 fade-in" style="animation-delay:0.5s;">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="width:5px;height:24px;background:#f59e0b;border-radius:3px;"></div>
+            <h6 class="mb-0 fw-bold text-dark">
+                <i class="fa-solid fa-chart-bar me-1" style="color:#f59e0b;"></i>
+                Historial de Cierres Automáticos
+            </h6>
+            <span class="badge ms-auto" style="background:#f59e0b;color:#1a202c;font-weight:600;" id="badge-historial-count">—</span>
+        </div>
+        <p class="text-muted mb-3" style="font-size:0.82rem;">
+            Estudiantes que alguna vez tuvieron sesiones cerradas automáticamente. Los marcados en
+            <span style="background:#dcfce7;color:#166534;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.75rem;font-weight:600;">Resuelto</span>
+            ya escanearon correctamente su última salida.
+        </p>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0 table-responsive">
+                <table class="table mb-0 align-middle" style="font-size:0.85rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:40px;" class="text-center">#</th>
+                            <th>Estudiante</th>
+                            <th class="text-center">Total cierres</th>
+                            <th class="text-center">Alertas activas</th>
+                            <th class="text-center">Última visita</th>
+                            <th class="text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial-alertas">
+                        <tr><td colspan="6" class="text-center py-3 text-muted">
+                            <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando historial...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -257,7 +301,77 @@
     document.addEventListener('DOMContentLoaded', () => {
         cargarLabsYVisitas();
         verificarAlertasCierreAuto();
+        cargarHistorialAlertas();
     });
+
+    // ── Cargar historial histórico de cierres ─────────────────────────────
+    async function cargarHistorialAlertas() {
+        try {
+            const resp = await fetch('/api/admin/historial-alertas');
+            const data = await resp.json();
+
+            const badge = document.getElementById('badge-historial-count');
+            const tbody = document.getElementById('tabla-historial-alertas');
+
+            if (badge) badge.textContent = `${data.length} estudiante(s)`;
+
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No hay registros históricos de cierres automáticos.</td></tr>';
+                return;
+            }
+
+            // Slice de los primeros 10
+            const maxMostrar = 10;
+            const dataMostrar = data.slice(0, maxMostrar);
+
+            tbody.innerHTML = dataMostrar.map((r, i) => {
+                const sinAlertas = parseInt(r.alertas_activas) === 0;
+                const estadoBadge = sinAlertas
+                    ? `<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:0.2rem 0.55rem;border-radius:20px;font-size:0.73rem;font-weight:600;white-space:nowrap;">
+                           <i class="fa-solid fa-circle-check me-1"></i>Resuelto
+                       </span>`
+                    : `<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:0.2rem 0.55rem;border-radius:20px;font-size:0.73rem;font-weight:600;white-space:nowrap;">
+                           <i class="fa-solid fa-triangle-exclamation me-1"></i>Activo (${r.alertas_activas})
+                       </span>`;
+
+                const fecha = r.ultima_visita
+                    ? new Date(r.ultima_visita).toLocaleDateString('es-ES')
+                    : '—';
+
+                return `<tr>
+                    <td class="text-center text-muted fw-bold">${i + 1}</td>
+                    <td>
+                        <div style="font-weight:600;color:#1a202c;font-size:0.85rem;">${r.nombre}</div>
+                        <div style="font-size:0.75rem;color:#64748b;">${r.carnet ?? 'Sin carnet'}</div>
+                    </td>
+                    <td class="text-center">
+                        <span style="background:#fef2f2;color:#ef4444;border:1px solid #fca5a5;padding:0.2rem 0.55rem;border-radius:20px;font-size:0.75rem;font-weight:700;">
+                            ${r.total_cierres}
+                        </span>
+                    </td>
+                    <td class="text-center" style="font-weight:600;color:${parseInt(r.alertas_activas) > 0 ? '#ef4444' : '#22c55e'};">
+                        ${r.alertas_activas}
+                    </td>
+                    <td class="text-center text-muted" style="font-size:0.82rem;">${fecha}</td>
+                    <td class="text-center">${estadoBadge}</td>
+                </tr>`;
+            }).join('');
+
+            // Agregar enlace al final si hay más datos o como acción global
+            tbody.innerHTML += `
+                <tr>
+                    <td colspan="6" class="text-center bg-light py-3">
+                        <a href="{{ route('admin.alertas-cierre') }}" class="btn btn-sm btn-outline-secondary px-4 fw-bold">
+                            <i class="fa-solid fa-up-right-from-square me-1"></i> Ir al Panel de Alertas Completas
+                        </a>
+                    </td>
+                </tr>
+            `;
+
+        } catch (err) {
+            console.error('Error al cargar historial de alertas:', err);
+        }
+    }
 
     // ── Carga labs + visitas ──────────────────────────────────────────────
     async function cargarLabsYVisitas() {
@@ -321,57 +435,82 @@
             visitasCache = await resp.json();
 
             document.getElementById('badge-visitas-hoy').textContent = `${visitasCache.length} visita(s)`;
-
-            if (visitasCache.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No hay registros para los filtros seleccionados.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = visitasCache.map(v => {
-                let estadoBadge;
-                if (v.no_exit_warning) {
-                    estadoBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:0.72rem;">
-                                       <i class="fa-solid fa-triangle-exclamation"></i> Sin salida (auto)
-                                   </span>`;
-                } else if (v.exit_time) {
-                    estadoBadge = `<span class="badge" style="background:#dcfce7; color:#166534; border:1px solid #86efac; font-size:0.72rem;">
-                                       <i class="fa-solid fa-circle-check"></i> Completa
-                                   </span>`;
-                } else {
-                    estadoBadge = `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; font-size:0.72rem;">
-                                       <i class="fa-solid fa-spinner fa-spin"></i> En laboratorio
-                                   </span>`;
-                }
-
-                const salida   = v.exit_time || '<span class="text-muted">—</span>';
-                const duracion = v.duracion  || '<span class="text-muted">—</span>';
-
-                // Botón finalizar solo si la visita está abierta
-                const btnFinalizar = !v.exit_time
-                    ? `<button class="btn-finalizar" onclick="finalizarVisita(${v.id}, this)" title="Finalizar sesión">
-                           <i class="fa-solid fa-stop-circle me-1"></i>Finalizar
-                       </button>`
-                    : `<span class="text-muted small">—</span>`;
-
-                return `
-                <tr id="fila-visita-${v.id}">
-                    <td class="text-muted small">${v.fecha ?? '—'}</td>
-                    <td class="fw-bold" style="color:var(--qr-primary);">${v.carnet}</td>
-                    <td>${v.nombre}</td>
-                    <td><span class="badge bg-light text-dark border" style="font-size:0.78rem;">${v.laboratorio}</span></td>
-                    <td class="text-center fw-bold">${v.entry_time}</td>
-                    <td class="text-center">${salida}</td>
-                    <td class="text-center">${duracion}</td>
-                    <td class="text-center">${estadoBadge}</td>
-                    <td class="text-center">${btnFinalizar}</td>
-                </tr>`;
-            }).join('');
+            filtrarVisitas();
 
         } catch (err) {
             tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error al cargar los datos.</td></tr>';
             toastr.error('Error al cargar los registros de visitas.', 'Error');
             console.error(err);
         }
+    }
+
+    // ── Filtrado local por barra de búsqueda ──────────────────────────────
+    function filtrarVisitas() {
+        const query = document.getElementById('filtro-busqueda-visitas').value.trim().toLowerCase();
+        
+        let filtradas = visitasCache;
+        if (query) {
+            filtradas = visitasCache.filter(v => 
+                (v.nombre ?? '').toLowerCase().includes(query) ||
+                (v.carnet ?? '').toLowerCase().includes(query)
+            );
+        }
+        
+        renderizarTablaVisitas(filtradas);
+    }
+
+    // ── Render de tabla HTML ──────────────────────────────────────────────
+    function renderizarTablaVisitas(lista) {
+        const tbody = document.getElementById('tabla-visitas-lab');
+
+        if (lista.length === 0 && visitasCache.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No hay registros para los filtros seleccionados.</td></tr>';
+            return;
+        }
+
+        if (lista.length === 0 && visitasCache.length > 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No se encontró ningún estudiante con esa búsqueda en el rango actual.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = lista.map(v => {
+            let estadoBadge;
+            if (v.no_exit_warning) {
+                estadoBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-size:0.72rem;">
+                                   <i class="fa-solid fa-triangle-exclamation"></i> Sin salida (auto)
+                               </span>`;
+            } else if (v.exit_time) {
+                estadoBadge = `<span class="badge" style="background:#dcfce7; color:#166534; border:1px solid #86efac; font-size:0.72rem;">
+                                   <i class="fa-solid fa-circle-check"></i> Completa
+                               </span>`;
+            } else {
+                estadoBadge = `<span class="badge" style="background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; font-size:0.72rem;">
+                                   <i class="fa-solid fa-spinner fa-spin"></i> En lab
+                               </span>`;
+            }
+
+            const salida   = v.exit_time || '<span class="text-muted">—</span>';
+            const duracion = v.duracion  || '<span class="text-muted">—</span>';
+
+            const btnFinalizar = !v.exit_time
+                ? `<button class="btn-finalizar" onclick="finalizarVisita(${v.id}, this)" title="Finalizar sesión">
+                       <i class="fa-solid fa-stop-circle me-1"></i>Finalizar
+                   </button>`
+                : `<span class="text-muted small">—</span>`;
+
+            return `
+            <tr id="fila-visita-${v.id}">
+                <td class="text-muted small">${v.fecha ?? '—'}</td>
+                <td class="fw-bold" style="color:var(--qr-primary);">${v.carnet}</td>
+                <td>${v.nombre}</td>
+                <td><span class="badge bg-light text-dark border" style="font-size:0.78rem;">${v.laboratorio}</span></td>
+                <td class="text-center fw-bold">${v.entry_time}</td>
+                <td class="text-center">${salida}</td>
+                <td class="text-center">${duracion}</td>
+                <td class="text-center">${estadoBadge}</td>
+                <td class="text-center">${btnFinalizar}</td>
+            </tr>`;
+        }).join('');
     }
 
     // ── Finalizar visita ──────────────────────────────────────────────────
@@ -412,40 +551,46 @@
     // ── Verificar alertas de cierres automáticos ──────────────────────────
     async function verificarAlertasCierreAuto() {
         try {
-            const resp   = await fetch('/api/admin/alertas-cierre-auto');
+            const resp    = await fetch('/api/admin/alertas-cierre-auto');
             const alertas = await resp.json();
 
             const contenedor = document.getElementById('contenedor-alertas');
             contenedor.innerHTML = '';
 
             if (alertas.length > 0) {
-                // Banner en la página
-                const listaNombres = alertas.map(a =>
-                    `<li><strong>${a.carnet ?? 'N/A'}</strong> — ${a.nombre} <span class="badge" style="background:#ef4444; color:#fff; border-radius:20px; font-size:0.7rem; padding:0.15rem 0.5rem;">${a.total_cierres} cierres</span></li>`
-                ).join('');
-
+                // Banner compacto — sin listar todos los estudiantes
                 contenedor.innerHTML = `
-                    <div class="alerta-banner fade-in">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <div>
-                            <strong style="color:#92400e;">Alerta — Estudiantes con 3 o más cierres automáticos:</strong>
-                            <ul class="mb-0 mt-1 ps-3" style="color:#78350f; font-size:0.875rem;">${listaNombres}</ul>
+                    <div class="alerta-banner fade-in" style="justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation" style="color:#b45309;font-size:1.3rem;flex-shrink:0;"></i>
+                            <div>
+                                <strong style="color:#92400e;">
+                                    ¡Atención! ${alertas.length} estudiante(s) han tenido 3 o más cierres automáticos de sesión.
+                                </strong>
+                                <p class="mb-0 mt-1" style="color:#78350f;font-size:0.8rem;">
+                                    Estos estudiantes no han marcado su salida del laboratorio de forma reiterada.
+                                </p>
+                            </div>
                         </div>
+                        <a href="{{ route('admin.alertas-cierre') }}"
+                           class="btn btn-sm"
+                           style="background:#b45309;color:#fff;border-radius:8px;font-weight:600;white-space:nowrap;flex-shrink:0;">
+                            <i class="fa-solid fa-arrow-right me-1"></i> Ver detalle
+                        </a>
                     </div>`;
 
-                // Toastr por cada alerta (máximo 5 para no saturar)
-                alertas.slice(0, 5).forEach(a => {
-                    toastr.warning(
-                        `<b>${a.carnet ?? ''} — ${a.nombre}</b> tiene <b>${a.total_cierres}</b> cierres automáticos.`,
-                        '⚠️ Alerta de cierre automático',
-                        { timeOut: 6000 }
-                    );
-                });
+                // Un solo Toastr resumido (no uno por estudiante)
+                toastr.warning(
+                    `<b>${alertas.length} estudiante(s)</b> tienen 3 o más cierres automáticos de sesión. <a href="{{ route('admin.alertas-cierre') }}" style="color:#fff;text-decoration:underline;">Ver detalle →</a>`,
+                    '⚠️ Alertas de cierre automático',
+                    { timeOut: 7000, closeButton: true, progressBar: true }
+                );
             }
         } catch (err) {
             console.error('Error al verificar alertas:', err);
         }
     }
+
 
     // ── Resetear filtros ──────────────────────────────────────────────────
     function resetFiltrosVisitas() {
@@ -454,6 +599,7 @@
         document.getElementById('filtro-fecha-desde').value = desde.toISOString().split('T')[0];
         document.getElementById('filtro-fecha-hasta').value = hoy.toISOString().split('T')[0];
         document.getElementById('filtro-lab-visitas').value = 'TODOS';
+        document.getElementById('filtro-busqueda-visitas').value = '';
         cargarVisitas();
     }
 
@@ -500,7 +646,7 @@
             const hasta = document.getElementById('filtro-fecha-hasta').value || '';
             const rango = (desde && hasta) ? `${desde}_al_${hasta}` : 'todas';
 
-            let csv = "\uFEFFEcha;Carnet;Nombre;Laboratorio;Entrada;Salida;Duración;Estado\n";
+            let csv = "\uFEFFFecha;Carnet;Nombre;Laboratorio;Entrada;Salida;Duración;Estado\n";
             visitasCache.forEach(v => {
                 const estado = v.no_exit_warning ? 'Sin salida (auto)' : (v.exit_time ? 'Completa' : 'En lab');
                 csv += `"${v.fecha||'—'}";"${v.carnet}";"${v.nombre}";"${v.laboratorio}";"${v.entry_time}";"${v.exit_time||'—'}";"${v.duracion||'—'}";"${estado}"\n`;

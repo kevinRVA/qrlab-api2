@@ -50,6 +50,14 @@ class LabQrController extends Controller
             // — Registrar SALIDA —
             $visitaAbierta->update(['exit_time' => $ahora]);
 
+            // Al escanear salida correctamente, perdonar warnings anteriores
+            // de este laboratorio para que no sigan saliendo las alertas.
+            LabVisit::where('student_id', $user->id)
+                ->where('laboratory_id', $lab->id)
+                ->where('auto_closed', true)
+                ->where('no_exit_warning', true)
+                ->update(['no_exit_warning' => false]);
+
             $duracion    = $visitaAbierta->entry_time->diff($ahora);
             $duracionStr = $duracion->h . 'h ' . $duracion->i . 'min';
 

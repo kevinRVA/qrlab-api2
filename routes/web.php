@@ -53,6 +53,10 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
         Route::get('/admin/practicas-libres', [AdminController::class, 'practicasLibres'])
              ->name('admin.practicas-libres');
 
+        // Vista de detalle: alertas de estudiantes con 3+ cierres automáticos
+        Route::get('/admin/alertas-cierre', [AdminController::class, 'alertasCierre'])
+             ->name('admin.alertas-cierre');
+
         // Imprimir QR estático de un laboratorio
         Route::get('/admin/lab-qr/{id}/imprimir', [AdminController::class, 'printLabQr'])
              ->name('admin.lab.imprimir');
@@ -64,6 +68,8 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
         Route::get('/api/admin/labs',                   [AdminController::class, 'getLabsApi']);
         Route::post('/api/admin/lab-visitas/{id}/finalizar', [AdminController::class, 'finalizarVisita']);
         Route::get('/api/admin/alertas-cierre-auto',    [AdminController::class, 'getAlertasCierreAutoApi']);
+        Route::get('/api/admin/historial-alertas',      [AdminController::class, 'getHistorialAlertasApi']);
+
     });
 
     /*
