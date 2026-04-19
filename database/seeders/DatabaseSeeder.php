@@ -132,5 +132,8 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         }
+
+        // 8. Coordinadores de laboratorio
+        $this->call(CoordinatorSeeder::class);
     }
 }

@@ -25,8 +25,15 @@ class WebAuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
+            // --- Control de Sesión Única ---
+            $token = \Illuminate\Support\Str::random(60);
+            $user->session_token = $token;
+            $user->save();
+            $request->session()->put('qrlab_session_token', $token);
+            // -------------------------------
+
             // Redirección según el Rol
-            if ($user->role === 'admin') {
+            if ($user->role === 'admin' || $user->role === 'coordinador') {
                 return redirect()->intended('/admin');
             } 
             

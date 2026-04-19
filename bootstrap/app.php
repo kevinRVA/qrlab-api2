@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
 
+        // Añadir a las rutas web para forzar sesión única
+        $middleware->web(append: [
+            \App\Http\Middleware\EnforceSingleSession::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

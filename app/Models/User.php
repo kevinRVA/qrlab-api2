@@ -47,7 +47,31 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
+    }
+
+    // ── Relación: Laboratorios asignados a un coordinador ──────────────────
+    public function coordinatorLabs()
+    {
+        return $this->belongsToMany(Laboratory::class, 'coordinator_labs');
+    }
+
+    /** ¿Es este usuario coordinador de laboratorio? */
+    public function isCoordinator(): bool
+    {
+        return $this->role === 'coordinador';
+    }
+
+    /** IDs numéricos de los labs asignados (para filtrar lab_visits, etc.) */
+    public function getAssignedLabIds(): array
+    {
+        return $this->coordinatorLabs()->pluck('laboratories.id')->toArray();
+    }
+
+    /** Nombres de los labs asignados (para filtrar sessions.laboratory_name) */
+    public function getAssignedLabNames(): array
+    {
+        return $this->coordinatorLabs()->pluck('laboratories.name')->toArray();
     }
 }

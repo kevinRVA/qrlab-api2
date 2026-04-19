@@ -198,7 +198,7 @@
                         <i class="fa-solid fa-clipboard-user"></i>
                     </div>
                     <div>
-                        <p class="hub-card-title">Asistencia de Clases</p>
+                        <p class="hub-card-title">Asistencias programadas a laboratorios</p>
                         <p class="hub-card-desc mt-2">
                             Visualiza el historial detallado de sesiones de clase, filtra por laboratorio,
                             docente o asignatura y descarga reportes en Excel.

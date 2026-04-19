@@ -23,6 +23,10 @@
         border-radius: 10px;
         min-height: 250px;
     }
+    .badge-clase       { background: #0d6efd; color: #fff; }
+    .badge-parcial     { background: #fd7e14; color: #fff; }
+    .badge-reposicion  { background: #7c3aed; color: #fff; }
+    .history-card .card-header { background: linear-gradient(135deg,#f8fafc,#f1f5f9); }
 </style>
 @endpush
 
@@ -57,6 +61,15 @@
                         @foreach($laboratories as $lab)
                             <option value="{{ $lab->name }}">{{ $lab->name }}</option>
                         @endforeach
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">Tipo de Clase</label>
+                    <select id="select-tipo-clase" class="form-select">
+                        <option value="Clase">&#128218; Clase</option>
+                        <option value="Parcial">&#128221; Parcial</option>
+                        <option value="Reposicion">&#128260; Reposici&oacute;n</option>
                     </select>
                 </div>
 
@@ -135,6 +148,76 @@
         </div>
     </div>
     @endif
+
+    {{-- ── Historial de últimas 10 clases ── --}}
+    @if(isset($recentSessions) && $recentSessions->count() > 0)
+    <div class="row justify-content-center mt-2">
+        <div class="col-md-10 mb-5">
+            <div class="card shadow-sm history-card">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="fa-solid fa-clock-rotate-left text-qrlab"></i> Historial de Clases Recientes
+                    </h6>
+                    <span class="badge bg-secondary">Últimas {{ $recentSessions->count() }} clases</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Materia / Sección</th>
+                                    <th>Laboratorio</th>
+                                    <th>Tipo</th>
+                                    <th class="text-center">Alumnos</th>
+                                    <th class="text-center">Reporte</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recentSessions as $rs)
+                                <tr>
+                                    <td class="small text-muted">{{ $rs->created_at->format('d/m/Y H:i') }}</td>
+                                    <td>
+                                        <span class="fw-semibold">{{ $rs->section->subject->name ?? 'N/A' }}</span>
+                                        <span class="badge bg-light text-dark border ms-1">Sec: {{ $rs->section->section_code ?? '' }}</span>
+                                    </td>
+                                    <td>{{ $rs->laboratory_name ?? '—' }}</td>
+                                    <td>
+                                        @php
+                                            $tipoClass = match($rs->class_type) {
+                                                'Parcial'    => 'badge-parcial',
+                                                'Reposicion' => 'badge-reposicion',
+                                                default      => 'badge-clase',
+                                            };
+                                            $tipoIcon = match($rs->class_type) {
+                                                'Parcial'    => '📝',
+                                                'Reposicion' => '🔄',
+                                                default      => '📘',
+                                            };
+                                        @endphp
+                                        <span class="badge {{ $tipoClass }}">{{ $tipoIcon }} {{ $rs->class_type ?? 'Clase' }}</span>
+                                    </td>
+                                    <td class="text-center fw-bold">{{ $rs->attendances_count }}</td>
+                                    <td class="text-center">
+                                        @if($rs->attendances_count > 0)
+                                            <a href="{{ route('docente.sesion.descargar', $rs->id) }}"
+                                               class="btn btn-sm btn-outline-success" title="Descargar lista">
+                                                <i class="fa-solid fa-file-csv"></i> CSV
+                                            </a>
+                                        @else
+                                            <span class="text-muted small">Sin asistentes</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection
 
@@ -144,8 +227,9 @@
     let currentSessionId = null;
 
     async function generarQR() {
-        const sectionId = document.getElementById('select-section').value;
-        const labName   = document.getElementById('select-lab').value;
+        const sectionId  = document.getElementById('select-section').value;
+        const labName    = document.getElementById('select-lab').value;
+        const classType  = document.getElementById('select-tipo-clase').value;
         const btnGenerar = document.getElementById('btn-generar');
 
         if (!sectionId || !labName) {
@@ -163,7 +247,7 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
-                body: JSON.stringify({ section_id: sectionId, laboratory_name: labName })
+                body: JSON.stringify({ section_id: sectionId, laboratory_name: labName, class_type: classType })
             });
 
             const data = await response.json();
@@ -189,6 +273,7 @@
                 document.getElementById('btn-finalizar').classList.remove('d-none');
                 document.getElementById('select-section').disabled = true;
                 document.getElementById('select-lab').disabled = true;
+                document.getElementById('select-tipo-clase').disabled = true;
             }
         } catch (error) {
             console.error('Error:', error);
@@ -202,10 +287,11 @@
     // Función para mostrar el QR de una clase olvidada
     function restaurarSesion(sessionId, sectionId, labName, qrUrl) {
         // Restaurar e inutilizar los selects
-        document.getElementById('select-section').value = sectionId;
-        document.getElementById('select-lab').value = labName;
+        document.getElementById('select-section').value    = sectionId;
+        document.getElementById('select-lab').value        = labName;
         document.getElementById('select-section').disabled = true;
-        document.getElementById('select-lab').disabled = true;
+        document.getElementById('select-lab').disabled     = true;
+        document.getElementById('select-tipo-clase').disabled = true;
         
         currentSessionId = sessionId;
 

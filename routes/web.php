@@ -42,7 +42,7 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     | Panel Administrador  (rol: admin)
     |----------------------------------------------------------------------
     */
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:admin|coordinador')->group(function () {
 
         Route::get('/admin', [AdminController::class, 'index'])
              ->name('admin.index');
@@ -79,10 +79,10 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     */
     Route::middleware('role:teacher')->group(function () {
 
-        Route::get('/docente',                   [TeacherController::class, 'index'])
-             ->name('docente.index');
-        Route::post('/docente/sesion',           [TeacherController::class, 'createSession']);
-        Route::post('/docente/sesion/finalizar', [TeacherController::class, 'finishSession']);
+        Route::get('/docente',                              [TeacherController::class, 'index'])->name('docente.index');
+        Route::post('/docente/sesion',                      [TeacherController::class, 'createSession']);
+        Route::post('/docente/sesion/finalizar',            [TeacherController::class, 'finishSession']);
+        Route::get('/docente/sesion/{id}/descargar',        [TeacherController::class, 'descargarReporte'])->name('docente.sesion.descargar');
     });
 
     /*

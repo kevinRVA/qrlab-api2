@@ -13,4 +13,10 @@ class Laboratory extends Model
     {
         return $this->hasMany(LabVisit::class);
     }
+
+    // Los coordinadores asignados a este laboratorio
+    public function coordinators()
+    {
+        return $this->belongsToMany(User::class, 'coordinator_labs');
+    }
 }

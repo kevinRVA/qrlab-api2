@@ -9,10 +9,11 @@ class Session extends Model
 {
     use HasFactory;
 
-    // LA NUEVA MAGIA: Ahora solo guardamos el ID de la sección y el laboratorio
+    // Guardamos el ID de la sección, laboratorio y tipo de clase
     protected $fillable = [
         'section_id',
         'laboratory_name',
+        'class_type',
         'qr_token',
         'is_active',
     ];

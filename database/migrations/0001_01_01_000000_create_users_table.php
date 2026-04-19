@@ -21,8 +21,7 @@ return new class extends Migration {
             $table->string('role')->default('student'); // Identifica si es 'admin', 'teacher' o 'student'
             $table->string('user_code')->unique()->nullable(); // Carné (ej. 2705632024) o Código (ej. DOC-7788)
             $table->string('career')->nullable(); // Ej. Ingeniería en Sistemas (solo estudiantes)
-            // --------------------------------
-
+            // -------------------------------- 
             $table->rememberToken();
             $table->timestamps();
         });

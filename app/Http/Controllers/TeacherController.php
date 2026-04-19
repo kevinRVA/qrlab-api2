@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use App\Models\Section;
 use App\Models\Laboratory;
 use App\Models\Session;
+use App\Models\Attendance;
 
 class TeacherController extends Controller
 {
@@ -28,24 +29,37 @@ class TeacherController extends Controller
             ->where('is_active', true)
             ->get();
 
-        return view('docente.index', compact('teacher', 'sections', 'laboratories', 'activeSessions'));
+        // Últimas 10 clases finalizadas (historial del docente)
+        $recentSessions = Session::with(['section.subject'])
+            ->withCount('attendances')
+            ->whereHas('section', function($q) use ($teacher) {
+                $q->where('teacher_id', $teacher->id);
+            })
+            ->where('is_active', false)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('docente.index', compact('teacher', 'sections', 'laboratories', 'activeSessions', 'recentSessions'));
     }
 
     // Crea la sesión en la base de datos y devuelve la URL para el QR
     public function createSession(Request $request)
     {
         $request->validate([
-            'section_id' => 'required|exists:sections,id',
-            'laboratory_name' => 'required|string'
+            'section_id'      => 'required|exists:sections,id',
+            'laboratory_name' => 'required|string',
+            'class_type'      => 'required|in:Clase,Parcial,Reposicion',
         ]);
 
         $token = Str::random(10); // Creamos el código único
 
         $session = Session::create([
-            'section_id' => $request->section_id,
+            'section_id'      => $request->section_id,
             'laboratory_name' => $request->laboratory_name,
-            'qr_token' => $token,
-            'is_active' => true,
+            'class_type'      => $request->class_type,
+            'qr_token'        => $token,
+            'is_active'       => true,
         ]);
 
         // Generamos la URL COMPLETA apuntando a tu IP
@@ -76,5 +90,52 @@ class TeacherController extends Controller
         $session->update(['is_active' => false]);
 
         return response()->json(['success' => true]);
+    }
+
+    // Descarga la lista de asistencia de una sesión propia del docente
+    public function descargarReporte($id)
+    {
+        $teacher = Auth::user();
+
+        // Sólo puede descargar sesiones de sus propias secciones
+        $sesion = Session::with(['section.subject', 'section.teacher'])
+            ->whereHas('section', function($q) use ($teacher) {
+                $q->where('teacher_id', $teacher->id);
+            })
+            ->findOrFail($id);
+
+        $asistencias = Attendance::with('student')->where('session_id', $id)->get();
+
+        $materia  = $sesion->section->subject->name ?? 'Materia';
+        $tipo     = $sesion->class_type ?? 'Clase';
+        $fecha    = $sesion->created_at->format('d-m-Y');
+        $fileName = "Asistencia_{$materia}_{$tipo}_{$fecha}.csv";
+
+        $headers = [
+            'Content-type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename={$fileName}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'            => '0',
+        ];
+
+        $callback = function() use ($asistencias, $sesion) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF"); // UTF-8 BOM para Excel
+            fputcsv($file, ['Carnet / Codigo', 'Nombre del Estudiante', 'Carrera', 'Tipo de Clase', 'Hora de Registro'], ';');
+            foreach ($asistencias as $asistencia) {
+                $estudiante = $asistencia->student;
+                fputcsv($file, [
+                    $estudiante->user_code ?? 'N/A',
+                    $estudiante->name      ?? 'Desconocido',
+                    $estudiante->career    ?? 'N/A',
+                    $sesion->class_type    ?? 'Clase',
+                    $asistencia->created_at->format('H:i:s'),
+                ], ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

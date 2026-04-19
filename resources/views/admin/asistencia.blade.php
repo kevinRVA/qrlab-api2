@@ -104,16 +104,25 @@
                                 <option value="TODOS">Todos</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small mb-1">Docente</label>
                             <select id="filtro-docente" class="form-select form-select-sm" onchange="aplicarFiltros()">
                                 <option value="TODOS">Todos</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small mb-1">Asignatura</label>
                             <select id="filtro-materia" class="form-select form-select-sm" onchange="aplicarFiltros()">
                                 <option value="TODOS">Todas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Tipo de Clase</label>
+                            <select id="filtro-tipo" class="form-select form-select-sm" onchange="aplicarFiltros()">
+                                <option value="TODOS">Todos</option>
+                                <option value="Clase">&#128218; Clase</option>
+                                <option value="Parcial">&#128221; Parcial</option>
+                                <option value="Reposicion">&#128260; Reposici&oacute;n</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -201,14 +210,17 @@
                                 <th class="cursor-pointer" onclick="ordenarTabla('asignatura')">
                                     Asignatura <i class="fa-solid fa-sort text-muted ms-1" id="icono-asignatura"></i>
                                 </th>
+                                <th class="cursor-pointer" onclick="ordenarTabla('tipo')">
+                                    Tipo <i class="fa-solid fa-sort text-muted ms-1" id="icono-tipo"></i>
+                                </th>
                                 <th class="text-center cursor-pointer" onclick="ordenarTabla('alumnos')">
                                     Alumnos <i class="fa-solid fa-sort text-muted ms-1" id="icono-alumnos"></i>
                                 </th>
                                 <th class="text-center">Detalle</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-sesiones">
-                            <tr><td colspan="6" class="text-center py-4">Cargando datos...</td></tr>
+        <tbody id="tabla-sesiones">
+                            <tr><td colspan="7" class="text-center py-4">Cargando datos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -322,26 +334,29 @@
     }
 
     function aplicarFiltros() {
-        const labSel = document.getElementById('filtro-lab').value;
-        const docSel = document.getElementById('filtro-docente').value;
-        const matSel = document.getElementById('filtro-materia').value;
+        const labSel   = document.getElementById('filtro-lab').value;
+        const docSel   = document.getElementById('filtro-docente').value;
+        const matSel   = document.getElementById('filtro-materia').value;
+        const tipoSel  = document.getElementById('filtro-tipo').value;
         const fechaSel = document.getElementById('filtro-fecha').value;
 
         sesionesFiltradas = todasLasSesiones.filter(s => {
-            const matchLab   = labSel === "TODOS" || (s.laboratory_name || 'Sin Asignar') === labSel;
-            const matchDoc   = docSel === "TODOS" || s.teacher_name === docSel;
-            const matchMat   = matSel === "TODOS" || s.subject === matSel;
+            const matchLab   = labSel  === "TODOS" || (s.laboratory_name || 'Sin Asignar') === labSel;
+            const matchDoc   = docSel  === "TODOS" || s.teacher_name === docSel;
+            const matchMat   = matSel  === "TODOS" || s.subject === matSel;
+            const matchTipo  = tipoSel === "TODOS" || (s.class_type || 'Clase') === tipoSel;
             const matchFecha = fechaSel === "" || s.created_at.split('T')[0] === fechaSel;
-            return matchLab && matchDoc && matchMat && matchFecha;
+            return matchLab && matchDoc && matchMat && matchTipo && matchFecha;
         });
         actualizarUI();
     }
 
     function limpiarFiltros() {
-        document.getElementById('filtro-lab').value    = "TODOS";
+        document.getElementById('filtro-lab').value     = "TODOS";
         document.getElementById('filtro-docente').value = "TODOS";
         document.getElementById('filtro-materia').value = "TODOS";
-        document.getElementById('filtro-fecha').value  = "";
+        document.getElementById('filtro-tipo').value    = "TODOS";
+        document.getElementById('filtro-fecha').value   = "";
         aplicarFiltros();
     }
 
@@ -357,9 +372,18 @@
         const tbody = document.getElementById('tabla-sesiones');
         tbody.innerHTML = '';
         if (sesionesFiltradas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No se encontraron clases.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No se encontraron clases.</td></tr>';
             return;
         }
+
+        const badgeTipo = (tipo) => {
+            switch(tipo) {
+                case 'Parcial':    return `<span class="badge" style="background:#fd7e14;">&#128221; Parcial</span>`;
+                case 'Reposicion': return `<span class="badge" style="background:#7c3aed;">&#128260; Reposici&oacute;n</span>`;
+                default:           return `<span class="badge bg-primary">&#128218; Clase</span>`;
+            }
+        };
+
         sesionesFiltradas.forEach(sesion => {
             const fecha = new Date(sesion.created_at).toLocaleDateString('es-ES', {
                 year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -367,7 +391,7 @@
             const botonDescarga = sesion.is_active
                 ? `<span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin"></i> Activa</span>`
                 : `<button class="btn btn-sm btn-outline-primary" title="Descargar Lista"
-                    onclick="confirmarDescargaIndividual(${sesion.id}, '${sesion.subject.replace(/'/g, "\\'")}',' ${new Date(sesion.created_at).toLocaleDateString('es-ES')}')"
+                    onclick="confirmarDescargaIndividual(${sesion.id}, '${sesion.subject.replace(/'/g, "\\'")}','  ${new Date(sesion.created_at).toLocaleDateString('es-ES')}')"
                    ><i class="fa-solid fa-download"></i></button>`;
             tbody.innerHTML += `
             <tr>
@@ -375,6 +399,7 @@
                 <td class="fw-bold text-dark">${sesion.laboratory_name || 'Sin Asignar'}</td>
                 <td>${sesion.teacher_name}</td>
                 <td class="text-primary">${sesion.subject} <span class="badge bg-light text-dark border">Sec: ${sesion.section}</span></td>
+                <td>${badgeTipo(sesion.class_type)}</td>
                 <td class="text-center fw-bold fs-6">${sesion.attendances_count}</td>
                 <td class="text-center">${botonDescarga}</td>
             </tr>`;
@@ -515,11 +540,11 @@
     }
 
     function ejecutarDescargaGlobal() {
-        let csv = "\uFEFFecha;Laboratorio;Docente;Asignatura;Seccion;Estado;Total Alumnos\n";
+        let csv = "\uFEFFecha;Laboratorio;Docente;Asignatura;Seccion;Tipo de Clase;Estado;Total Alumnos\n";
         sesionesFiltradas.forEach(s => {
             const fecha  = new Date(s.created_at).toLocaleString('es-ES');
             const estado = s.is_active ? "En curso" : "Finalizada";
-            csv += `"${fecha}";"${s.laboratory_name||'Sin Asignar'}";"${s.teacher_name}";"${s.subject}";"${s.section}";"${estado}";"${s.attendances_count}"\n`;
+            csv += `"${fecha}";"${s.laboratory_name||'Sin Asignar'}";"${s.teacher_name}";"${s.subject}";"${s.section}";"${s.class_type||'Clase'}";"${estado}";"${s.attendances_count}"\n`;
         });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -538,6 +563,7 @@
                 case 'laboratorio': vA = (a.laboratory_name||'Sin Asignar').toLowerCase(); vB = (b.laboratory_name||'Sin Asignar').toLowerCase(); break;
                 case 'docente':     vA = a.teacher_name.toLowerCase(); vB = b.teacher_name.toLowerCase(); break;
                 case 'asignatura':  vA = a.subject.toLowerCase(); vB = b.subject.toLowerCase(); break;
+                case 'tipo':        vA = (a.class_type||'Clase').toLowerCase(); vB = (b.class_type||'Clase').toLowerCase(); break;
                 case 'alumnos':     vA = a.attendances_count; vB = b.attendances_count; break;
                 default: return 0;
             }
@@ -545,7 +571,7 @@
             if (vA > vB) return ordenAscendente ?  1 : -1;
             return 0;
         });
-        ['fecha','laboratorio','docente','asignatura','alumnos'].forEach(col => {
+        ['fecha','laboratorio','docente','asignatura','tipo','alumnos'].forEach(col => {
             const ic = document.getElementById(`icono-${col}`);
             if (!ic) return;
             ic.className = col === columna
