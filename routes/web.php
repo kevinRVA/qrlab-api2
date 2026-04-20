@@ -74,6 +74,32 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
 
     /*
     |----------------------------------------------------------------------
+    | Panel Administrador Exclusivo (rol: admin)
+    |----------------------------------------------------------------------
+    */
+    Route::middleware('role:admin')->group(function () {
+        // Vista principal de configuración
+        Route::get('/admin/configuracion', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'index'])
+             ->name('admin.configuracion');
+
+        // CRUD Coordinadores
+        Route::get('/api/admin/system/coordinators', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'getCoordinators']);
+        Route::post('/api/admin/system/coordinators', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'storeCoordinator']);
+        Route::put('/api/admin/system/coordinators/{id}', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'updateCoordinator']);
+        Route::delete('/api/admin/system/coordinators/{id}', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'destroyCoordinator']);
+
+        // CRUD Laboratorios
+        Route::get('/api/admin/system/labs', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'getLabs']);
+        Route::post('/api/admin/system/labs', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'storeLab']);
+        Route::put('/api/admin/system/labs/{id}', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'updateLab']);
+        Route::delete('/api/admin/system/labs/{id}', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'destroyLab']);
+
+        // Asignación de Laboratorios
+        Route::post('/api/admin/system/coordinators/{id}/labs', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'assignLabs']);
+    });
+
+    /*
+    |----------------------------------------------------------------------
     | Panel Docente  (rol: teacher)
     |----------------------------------------------------------------------
     */

@@ -20,52 +20,52 @@ class CoordinatorSeeder extends Seeder
          */
         $coordinadores = [
             [
-                'name'  => 'Karen Hernandez',
+                'name' => 'Karen Hernandez',
                 'email' => 'karen.hernandez@qrlab.com',
-                'code'  => 'COORD-001',
-                'labs'  => [1, 2, 8, 7],
-            ],  
+                'code' => 'COORD-001',
+                'labs' => [1, 2, 8, 7],
+            ],
             [
-                'name'  => 'Francisco Linares',
+                'name' => 'Francisco Linares',
                 'email' => 'francisco.linares@qrlab.com',
-                'code'  => 'COORD-002',
-                'labs'  => [1, 2, 8, 7],
+                'code' => 'COORD-002',
+                'labs' => [1, 2, 8, 7],
             ],
             [
-                'name'  => 'Evelyn Saravia',
+                'name' => 'Evelyn Saravia',
                 'email' => 'evelyn.saravia@qrlab.com',
-                'code'  => 'COORD-003',
-                'labs'  => [10, 4, 11, 3],
+                'code' => 'COORD-003',
+                'labs' => [10, 4, 11, 3],
             ],
             [
-                'name'  => 'Mario Valdez',
+                'name' => 'Mario Valdez',
                 'email' => 'mario.valdez@qrlab.com',
-                'code'  => 'COORD-004',
-                'labs'  => [10, 4, 11, 3],
+                'code' => 'COORD-004',
+                'labs' => [10, 4, 11, 3],
             ],
             [
-                'name'  => 'Nelson Lopez',
+                'name' => 'Nelson Lopez',
                 'email' => 'nelson.lopez@qrlab.com',
-                'code'  => 'COORD-005',
-                'labs'  => [14, 15, 12],
+                'code' => 'COORD-005',
+                'labs' => [14, 15, 12],
             ],
             [
-                'name'  => 'Marvin Mira',
+                'name' => 'Marvin Mira',
                 'email' => 'marvin.mira@qrlab.com',
-                'code'  => 'COORD-006',
-                'labs'  => [6, 9, 5],
+                'code' => 'COORD-006',
+                'labs' => [6, 9, 5],
             ],
             [
-                'name'  => 'Edwin Martinez',
+                'name' => 'Edwin Martinez',
                 'email' => 'edwin.martinez@qrlab.com',
-                'code'  => 'COORD-007',
-                'labs'  => [6, 9, 5],
+                'code' => 'COORD-007',
+                'labs' => [6, 9, 5],
             ],
             [
-                'name'  => 'Ruben Escobar',
+                'name' => 'Ruben Escobar',
                 'email' => 'ruben.escobar@qrlab.com',
-                'code'  => 'COORD-008',
-                'labs'  => [13],
+                'code' => 'COORD-008',
+                'labs' => [13],
             ],
         ];
 
@@ -74,9 +74,9 @@ class CoordinatorSeeder extends Seeder
             $user = User::firstOrCreate(
                 ['email' => $data['email']],
                 [
-                    'name'      => $data['name'],
-                    'password'  => $password,
-                    'role'      => 'coordinador',
+                    'name' => $data['name'],
+                    'password' => $password,
+                    'role' => 'coordinador',
                     'user_code' => $data['code'],
                 ]
             );

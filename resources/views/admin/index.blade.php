@@ -191,7 +191,7 @@
     <div class="row g-4 fade-in fade-in-delay-2">
 
         {{-- Card: Asistencia de Clases --}}
-        <div class="col-md-6">
+        <div class="col-md-4">
             <a href="{{ route('admin.asistencia') }}" class="hub-card shadow-sm hub-card-blue" style="border: 2px solid transparent;">
                 <div class="hub-card-body">
                     <div class="hub-icon-wrap">
@@ -212,7 +212,7 @@
         </div>
 
         {{-- Card: Prácticas Libres --}}
-        <div class="col-md-6">
+        <div class="col-md-4">
             <a href="{{ route('admin.practicas-libres') }}" class="hub-card shadow-sm hub-card-qrlab" style="border: 2px solid transparent;">
                 <div class="hub-card-body">
                     <div class="hub-icon-wrap">
@@ -231,6 +231,28 @@
                 </div>
             </a>
         </div>
+
+        {{-- Card: Administración del Sistema (SOLO ADMIN) --}}
+        @if(Auth::user()->role === 'admin')
+        <div class="col-md-4">
+            <a href="{{ route('admin.configuracion') }}" class="hub-card shadow-sm" style="border: 2px solid transparent; background-color: #fff;">
+                <div class="hub-card-body">
+                    <div class="hub-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                        <i class="fa-solid fa-cogs"></i>
+                    </div>
+                    <div>
+                        <p class="hub-card-title">Administración del Sistema</p>
+                        <p class="hub-card-desc mt-2">
+                            Gestiona a los coordinadores del sistema, crea nuevos laboratorios y asigna los laboratorios a cada coordinador.
+                        </p>
+                    </div>
+                    <div class="hub-card-arrow" style="color:#10b981;">
+                        Ver módulo <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        @endif
 
     </div>
 </div>
