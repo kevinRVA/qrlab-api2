@@ -12,7 +12,34 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens;
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (empty($user->user_code)) {
+                $prefix = 'USER';
+                switch ($user->role) {
+                    case 'coordinador':
+                        $prefix = 'CORD';
+                        break;
+                    case 'admin':
+                    case 'administrador':
+                        $prefix = 'ADMN';
+                        break;
+                    case 'profesor':
+                        $prefix = 'PROF';
+                        break;
+                    case 'alumno':
+                        $prefix = 'ALUM';
+                        break;
+                }
+                
+                $nextId = (\App\Models\User::max('id') ?? 0) + 1;
+                $user->user_code = $prefix . '-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

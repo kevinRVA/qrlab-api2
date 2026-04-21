@@ -35,16 +35,21 @@ class ConfiguracionSistemaController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'user_code' => 'required|string|unique:users,user_code',
+            'user_code' => 'nullable|string|unique:users,user_code',
         ]);
 
-        $user = \App\Models\User::create([
+        $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
-            'user_code' => $validated['user_code'],
             'role' => 'coordinador',
-        ]);
+        ];
+
+        if (!empty($validated['user_code'])) {
+            $userData['user_code'] = $validated['user_code'];
+        }
+
+        $user = \App\Models\User::create($userData);
 
         return response()->json(['ok' => true, 'message' => 'Coordinador creado con éxito.', 'user' => $user]);
     }
