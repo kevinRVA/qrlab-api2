@@ -93,7 +93,7 @@ class TeacherController extends Controller
     }
 
     // Descarga la lista de asistencia de una sesión propia del docente
-    public function descargarReporte($id)
+    public function descargarReporte($id, \App\Services\ReportService $reportService)
     {
         $teacher = Auth::user();
 
@@ -104,38 +104,6 @@ class TeacherController extends Controller
             })
             ->findOrFail($id);
 
-        $asistencias = Attendance::with('student')->where('session_id', $id)->get();
-
-        $materia  = $sesion->section->subject->name ?? 'Materia';
-        $tipo     = $sesion->class_type ?? 'Clase';
-        $fecha    = $sesion->created_at->format('d-m-Y');
-        $fileName = "Asistencia_{$materia}_{$tipo}_{$fecha}.csv";
-
-        $headers = [
-            'Content-type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename={$fileName}",
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'            => '0',
-        ];
-
-        $callback = function() use ($asistencias, $sesion) {
-            $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF"); // UTF-8 BOM para Excel
-            fputcsv($file, ['Carnet / Codigo', 'Nombre del Estudiante', 'Carrera', 'Tipo de Clase', 'Hora de Registro'], ';');
-            foreach ($asistencias as $asistencia) {
-                $estudiante = $asistencia->student;
-                fputcsv($file, [
-                    $estudiante->user_code ?? 'N/A',
-                    $estudiante->name      ?? 'Desconocido',
-                    $estudiante->career    ?? 'N/A',
-                    $sesion->class_type    ?? 'Clase',
-                    $asistencia->created_at->format('H:i:s'),
-                ], ';');
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $reportService->downloadSessionAttendanceCsv($sesion);
     }
 }

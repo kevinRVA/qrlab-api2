@@ -14,23 +14,28 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
     use HasApiTokens;
 
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_COORDINATOR = 'coordinador';
+    public const ROLE_TEACHER = 'teacher';
+    public const ROLE_STUDENT = 'student';
+
     protected static function booted()
     {
         static::creating(function ($user) {
             if (empty($user->user_code)) {
                 $prefix = 'USER';
                 switch ($user->role) {
-                    case 'coordinador':
+                    case self::ROLE_COORDINATOR:
                         $prefix = 'CORD';
                         break;
-                    case 'admin':
+                    case self::ROLE_ADMIN:
                     case 'administrador':
                         $prefix = 'ADMN';
                         break;
-                    case 'profesor':
+                    case self::ROLE_TEACHER:
                         $prefix = 'PROF';
                         break;
-                    case 'alumno':
+                    case self::ROLE_STUDENT:
                         $prefix = 'ALUM';
                         break;
                 }
@@ -87,7 +92,7 @@ class User extends Authenticatable
     /** ¿Es este usuario coordinador de laboratorio? */
     public function isCoordinator(): bool
     {
-        return $this->role === 'coordinador';
+        return $this->role === self::ROLE_COORDINATOR;
     }
 
     /** IDs numéricos de los labs asignados (para filtrar lab_visits, etc.) */

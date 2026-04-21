@@ -1,12 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\AttendanceWebController;
 use App\Http\Controllers\TeacherController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\LabQrController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\CoordinatorDashboardController;
+use App\Models\User;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,36 +42,84 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
 
     /*
     |----------------------------------------------------------------------
-    | Panel Administrador  (rol: admin)
+    | Panel Administrador / Coordinador
     |----------------------------------------------------------------------
     */
-    Route::middleware('role:admin|coordinador')->group(function () {
+    Route::middleware('role:' . User::ROLE_ADMIN . '|' . User::ROLE_COORDINATOR)->group(function () {
 
-        Route::get('/admin', [AdminController::class, 'index'])
-             ->name('admin.index');
+        Route::get('/admin', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->index() 
+                : app(CoordinatorDashboardController::class)->index();
+        })->name('admin.index');
 
-        // Sub-módulos del panel admin
-        Route::get('/admin/asistencia', [AdminController::class, 'asistencia'])
-             ->name('admin.asistencia');
-        Route::get('/admin/practicas-libres', [AdminController::class, 'practicasLibres'])
-             ->name('admin.practicas-libres');
+        // Sub-módulos del panel
+        Route::get('/admin/asistencia', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->asistencia() 
+                : app(CoordinatorDashboardController::class)->asistencia();
+        })->name('admin.asistencia');
 
-        // Vista de detalle: alertas de estudiantes con 3+ cierres automáticos
-        Route::get('/admin/alertas-cierre', [AdminController::class, 'alertasCierre'])
-             ->name('admin.alertas-cierre');
+        Route::get('/admin/practicas-libres', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->practicasLibres() 
+                : app(CoordinatorDashboardController::class)->practicasLibres();
+        })->name('admin.practicas-libres');
 
-        // Imprimir QR estático de un laboratorio
-        Route::get('/admin/lab-qr/{id}/imprimir', [AdminController::class, 'printLabQr'])
-             ->name('admin.lab.imprimir');
+        Route::get('/admin/alertas-cierre', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->alertasCierre() 
+                : app(CoordinatorDashboardController::class)->alertasCierre();
+        })->name('admin.alertas-cierre');
 
-        // APIs JSON del dashboard
-        Route::get('/api/admin/sesiones',               [AdminController::class, 'getSesionesApi']);
-        Route::get('/api/admin/descargar-reporte/{id}', [AdminController::class, 'descargarReporte']);
-        Route::get('/api/admin/lab-visitas',            [AdminController::class, 'getLabVisitasApi']);
-        Route::get('/api/admin/labs',                   [AdminController::class, 'getLabsApi']);
-        Route::post('/api/admin/lab-visitas/{id}/finalizar', [AdminController::class, 'finalizarVisita']);
-        Route::get('/api/admin/alertas-cierre-auto',    [AdminController::class, 'getAlertasCierreAutoApi']);
-        Route::get('/api/admin/historial-alertas',      [AdminController::class, 'getHistorialAlertasApi']);
+        Route::get('/admin/lab-qr/{id}/imprimir', function(Request $request, $id) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->printLabQr($id) 
+                : app(CoordinatorDashboardController::class)->printLabQr($id);
+        })->name('admin.lab.imprimir');
+
+        // APIs JSON del dashboard consumidas por las vistas Blade
+        Route::get('/api/admin/sesiones', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->getSesionesApi() 
+                : app(CoordinatorDashboardController::class)->getSesionesApi();
+        });
+
+        Route::get('/api/admin/descargar-reporte/{id}', function(Request $request, $id, \App\Services\ReportService $reportService) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->descargarReporte($id, $reportService) 
+                : app(CoordinatorDashboardController::class)->descargarReporte($id, $reportService);
+        });
+
+        Route::get('/api/admin/lab-visitas', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->getLabVisitasApi($request) 
+                : app(CoordinatorDashboardController::class)->getLabVisitasApi($request);
+        });
+
+        Route::post('/api/admin/lab-visitas/{id}/finalizar', function(Request $request, $id) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->finalizarVisita($id) 
+                : app(CoordinatorDashboardController::class)->finalizarVisita($id);
+        });
+
+        Route::get('/api/admin/labs', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->getLabsApi() 
+                : app(CoordinatorDashboardController::class)->getLabsApi();
+        });
+
+        Route::get('/api/admin/alertas-cierre-auto', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->getAlertasCierreAutoApi() 
+                : app(CoordinatorDashboardController::class)->getAlertasCierreAutoApi();
+        });
+
+        Route::get('/api/admin/historial-alertas', function(Request $request) {
+            return $request->user()->role === User::ROLE_ADMIN 
+                ? app(AdminDashboardController::class)->getHistorialAlertasApi() 
+                : app(CoordinatorDashboardController::class)->getHistorialAlertasApi();
+        });
 
     });
 
@@ -77,7 +128,7 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     | Panel Administrador Exclusivo (rol: admin)
     |----------------------------------------------------------------------
     */
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:' . User::ROLE_ADMIN)->group(function () {
         // Vista principal de configuración
         Route::get('/admin/configuracion', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'index'])
              ->name('admin.configuracion');
@@ -103,7 +154,7 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     | Panel Docente  (rol: teacher)
     |----------------------------------------------------------------------
     */
-    Route::middleware('role:teacher')->group(function () {
+    Route::middleware('role:' . User::ROLE_TEACHER)->group(function () {
 
         Route::get('/docente',                              [TeacherController::class, 'index'])->name('docente.index');
         Route::post('/docente/sesion',                      [TeacherController::class, 'createSession']);
@@ -116,7 +167,7 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     | Panel Estudiante  (rol: student)
     |----------------------------------------------------------------------
     */
-    Route::middleware('role:student')->group(function () {
+    Route::middleware('role:' . User::ROLE_STUDENT)->group(function () {
 
         Route::get('/perfil', [StudentController::class, 'index'])
              ->name('student.perfil');

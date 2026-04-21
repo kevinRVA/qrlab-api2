@@ -22,27 +22,22 @@ class ConfiguracionSistemaController extends Controller
     {
         // Obtener usuarios con rol 'coordinador' y sus laboratorios asignados
         $coordinators = \App\Models\User::with('coordinatorLabs')
-            ->where('role', 'coordinador')
+            ->where('role', \App\Models\User::ROLE_COORDINATOR)
             ->orderBy('name')
             ->get();
 
         return response()->json($coordinators);
     }
 
-    public function storeCoordinator(Request $request)
+    public function storeCoordinator(\App\Http\Requests\StoreCoordinatorRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'user_code' => 'nullable|string|unique:users,user_code',
-        ]);
+        $validated = $request->validated();
 
         $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
-            'role' => 'coordinador',
+            'role' => \App\Models\User::ROLE_COORDINATOR,
         ];
 
         if (!empty($validated['user_code'])) {
@@ -54,16 +49,11 @@ class ConfiguracionSistemaController extends Controller
         return response()->json(['ok' => true, 'message' => 'Coordinador creado con éxito.', 'user' => $user]);
     }
 
-    public function updateCoordinator(Request $request, $id)
+    public function updateCoordinator(\App\Http\Requests\UpdateCoordinatorRequest $request, $id)
     {
-        $user = \App\Models\User::where('role', 'coordinador')->findOrFail($id);
+        $user = \App\Models\User::where('role', \App\Models\User::ROLE_COORDINATOR)->findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'user_code' => 'required|string|unique:users,user_code,' . $user->id,
-            'password' => 'nullable|string|min:6',
-        ]);
+        $validated = $request->validated();
 
         $data = [
             'name' => $validated['name'],
@@ -82,7 +72,7 @@ class ConfiguracionSistemaController extends Controller
 
     public function destroyCoordinator($id)
     {
-        $user = \App\Models\User::where('role', 'coordinador')->findOrFail($id);
+        $user = \App\Models\User::where('role', \App\Models\User::ROLE_COORDINATOR)->findOrFail($id);
         // Al borrar el usuario, sus relaciones en coordinator_labs se borran si hay onDelete('cascade')
         // Por seguridad, hacemos detach primero:
         $user->coordinatorLabs()->detach();
@@ -101,11 +91,9 @@ class ConfiguracionSistemaController extends Controller
         return response()->json($labs);
     }
 
-    public function storeLab(Request $request)
+    public function storeLab(\App\Http\Requests\StoreLabRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:laboratories,name',
-        ]);
+        $validated = $request->validated();
 
         $lab = \App\Models\Laboratory::create([
             'name' => $validated['name'],
@@ -114,13 +102,11 @@ class ConfiguracionSistemaController extends Controller
         return response()->json(['ok' => true, 'message' => 'Laboratorio creado con éxito.', 'lab' => $lab]);
     }
 
-    public function updateLab(Request $request, $id)
+    public function updateLab(\App\Http\Requests\UpdateLabRequest $request, $id)
     {
         $lab = \App\Models\Laboratory::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:laboratories,name,' . $lab->id,
-        ]);
+        $validated = $request->validated();
 
         $lab->update(['name' => $validated['name']]);
 
@@ -145,7 +131,7 @@ class ConfiguracionSistemaController extends Controller
 
     public function assignLabs(Request $request, $id)
     {
-        $user = \App\Models\User::where('role', 'coordinador')->findOrFail($id);
+        $user = \App\Models\User::where('role', \App\Models\User::ROLE_COORDINATOR)->findOrFail($id);
 
         $validated = $request->validate([
             'labs' => 'array',
