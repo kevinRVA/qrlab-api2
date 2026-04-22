@@ -540,7 +540,7 @@
     }
 
     function ejecutarDescargaGlobal() {
-        let csv = "\uFEFFecha;Laboratorio;Docente;Asignatura;Seccion;Tipo de Clase;Estado;Total Alumnos\n";
+        let csv = "\uFEFFFecha;Laboratorio;Docente;Asignatura;Seccion;Tipo de Clase;Estado;Total Alumnos\n";
         sesionesFiltradas.forEach(s => {
             const fecha  = new Date(s.created_at).toLocaleString('es-ES');
             const estado = s.is_active ? "En curso" : "Finalizada";
