@@ -60,7 +60,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         // --- NUEVO: GENERAR 50 ESTUDIANTES EXTRA ---
-        for ($i = 1; $i <= 50; $i++) {
+        for ($i = 1; $i <= 400; $i++) {
             $estudiantes[] = User::create([
                 'name' => $faker->firstName . ' ' . $faker->lastName,
                 'email' => "alumno{$i}@qrlab.com",

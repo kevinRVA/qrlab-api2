@@ -19,4 +19,10 @@ class Section extends Model
     {
         return $this->belongsTo(User::class, 'teacher_id');
     }
+
+    // Relación: Estudiantes instructores (tutores) asignados a esta sección
+    public function instructors()
+    {
+        return $this->belongsToMany(User::class, 'section_instructors');
+    }
 }

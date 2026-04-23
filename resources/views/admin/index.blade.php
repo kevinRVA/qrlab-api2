@@ -252,6 +252,25 @@
                 </div>
             </a>
         </div>
+
+        <div class="col-md-4">
+            <a href="{{ route('admin.instructors') }}" class="hub-card shadow-sm" style="border: 2px solid transparent; background-color: #fff;">
+                <div class="hub-card-body">
+                    <div class="hub-icon-wrap" style="background: rgba(99, 102, 241, 0.12); color: #6366f1;">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                    </div>
+                    <div>
+                        <p class="hub-card-title">Gestión de Instructores</p>
+                        <p class="hub-card-desc mt-2">
+                            Asigna estudiantes como instructores de clases específicas para que puedan generar y asistir en las sesiones.
+                        </p>
+                    </div>
+                    <div class="hub-card-arrow" style="color:#6366f1;">
+                        Ver módulo <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
         @endif
 
     </div>

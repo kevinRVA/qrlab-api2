@@ -13,22 +13,29 @@ class SessionController extends Controller
      */
     public function start(Request $request)
     {
-        // 1. Validamos los datos que envía el docente desde la app web
+        // 1. Validamos los datos
         $request->validate([
-            'teacher_name' => 'required|string|max:255',
-            'teacher_code' => 'required|string|max:50',
-            'subject' => 'required|string|max:255',
-            'section' => 'required|string|max:50',
+            'section_id' => 'required|exists:sections,id',
             'laboratory_name' => 'required|string',
+            'class_type' => 'nullable|string'
         ]);
 
-        // 2. Creamos la sesión en tu base de datos QRLAB
+        $user = auth()->user();
+        $section = \App\Models\Section::with('instructors')->findOrFail($request->section_id);
+
+        // Validation: User must be the teacher OR an assigned instructor
+        $isTeacher = $section->teacher_id == $user->id;
+        $isInstructor = $section->instructors->contains('id', $user->id);
+
+        if (!$isTeacher && !$isInstructor) {
+            return response()->json(['error' => 'No tienes permiso para iniciar esta clase.'], 403);
+        }
+
+        // 2. Creamos la sesión
         $session = Session::create([
-            'teacher_name' => $request->teacher_name,
-            'teacher_code' => $request->teacher_code,
-            'subject' => $request->subject,
-            'section' => $request->section,
+            'section_id' => $request->section_id,
             'laboratory_name' => $request->laboratory_name,
+            'class_type' => $request->class_type ?? 'Clase',
             'qr_token' => Str::uuid()->toString(), // Genera el token único para el QR
             'is_active' => true,
         ]);

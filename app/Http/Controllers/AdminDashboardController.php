@@ -174,4 +174,66 @@ class AdminDashboardController extends Controller
             ->get();
         return response()->json($historial);
     }
+
+    public function instructorsIndex()
+    {
+        // View for managing instructors
+        return view('admin.instructors');
+    }
+
+    public function getInstructorsApi()
+    {
+        // Return students and any assigned sections
+        $students = User::where('role', User::ROLE_STUDENT)
+            ->with(['instructorSections.subject', 'instructorSections.teacher'])
+            ->get();
+            
+        $sections = \App\Models\Section::with(['subject', 'teacher'])->get();
+
+        return response()->json([
+            'students' => $students,
+            'sections' => $sections
+        ]);
+    }
+
+    public function assignInstructor(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'section_id' => 'required|exists:sections,id',
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        
+        // Ensure they are marked as instructor
+        if (!$user->is_instructor) {
+            $user->update(['is_instructor' => true]);
+        }
+
+        // Assign to section (avoid duplicates)
+        $user->instructorSections()->syncWithoutDetaching([$request->section_id]);
+
+        return response()->json(['ok' => true, 'mensaje' => 'Instructor asignado a la sección correctamente.']);
+    }
+
+    public function removeInstructorAssignment(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'section_id' => 'required|exists:sections,id',
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        
+        // Remove from section
+        $user->instructorSections()->detach($request->section_id);
+
+        // If they have no more sections, maybe remove the is_instructor flag?
+        // Let's keep it simple and just remove the relation. The flag can stay or be updated.
+        if ($user->instructorSections()->count() === 0) {
+            $user->update(['is_instructor' => false]);
+        }
+
+        return response()->json(['ok' => true, 'mensaje' => 'Asignación de instructor removida.']);
+    }
 }

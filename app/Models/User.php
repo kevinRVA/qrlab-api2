@@ -58,6 +58,7 @@ class User extends Authenticatable
         'role',       // <-- NUEVO
         'user_code',  // <-- NUEVO
         'career',     // <-- NUEVO
+        'is_instructor',
     ];
 
     /**
@@ -105,5 +106,11 @@ class User extends Authenticatable
     public function getAssignedLabNames(): array
     {
         return $this->coordinatorLabs()->pluck('laboratories.name')->toArray();
+    }
+
+    // ── Relación: Secciones en las que este usuario es instructor (tutor) ──
+    public function instructorSections()
+    {
+        return $this->belongsToMany(Section::class, 'section_instructors');
     }
 }

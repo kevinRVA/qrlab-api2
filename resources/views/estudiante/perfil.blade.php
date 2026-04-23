@@ -214,6 +214,11 @@
                 </p>
             </div>
             <div class="d-flex gap-2 flex-wrap align-items-center">
+                @if($user->is_instructor)
+                <a href="{{ route('instructor.index') }}" class="btn-camara-qr" style="background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.7); color: white; text-decoration: none;">
+                    <i class="fa-solid fa-chalkboard-user"></i> Panel de Instructor
+                </a>
+                @endif
                 {{-- Botón abrir cámara QR --}}
                 <button class="btn-camara-qr" data-bs-toggle="modal" data-bs-target="#modal-camara" id="btn-abrir-camara">
                     <i class="fa-solid fa-camera"></i> Marcar Asistencia

@@ -129,9 +129,16 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     |----------------------------------------------------------------------
     */
     Route::middleware('role:' . User::ROLE_ADMIN)->group(function () {
-        // Vista principal de configuración
-        Route::get('/admin/configuracion', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'index'])
-             ->name('admin.configuracion');
+        // Vista de instructores
+        Route::get('/admin/instructors', [AdminDashboardController::class, 'instructorsIndex'])->name('admin.instructors');
+        
+        // Rutas de Configuración del Sistema (Coordinadores y Labs)
+        Route::get('/admin/configuracion', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'index'])->name('admin.configuracion');
+
+        // Instructores
+        Route::get('/api/admin/system/instructors', [AdminDashboardController::class, 'getInstructorsApi']);
+        Route::post('/api/admin/system/instructors/assign', [AdminDashboardController::class, 'assignInstructor']);
+        Route::post('/api/admin/system/instructors/remove', [AdminDashboardController::class, 'removeInstructorAssignment']);
 
         // CRUD Coordinadores
         Route::get('/api/admin/system/coordinators', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'getCoordinators']);
@@ -168,8 +175,12 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     |----------------------------------------------------------------------
     */
     Route::middleware('role:' . User::ROLE_STUDENT)->group(function () {
-
-        Route::get('/perfil', [StudentController::class, 'index'])
-             ->name('student.perfil');
+        Route::get('/perfil', [StudentController::class, 'index'])->name('student.perfil');
+        
+        // Rutas de Instructor (Tutor)
+        Route::get('/estudiante/instructor', [\App\Http\Controllers\InstructorController::class, 'index'])->name('instructor.index');
+        Route::post('/estudiante/instructor/sesion', [\App\Http\Controllers\InstructorController::class, 'createSession']);
+        Route::post('/estudiante/instructor/sesion/finalizar', [\App\Http\Controllers\InstructorController::class, 'finishSession']);
+        Route::get('/estudiante/instructor/sesion/{id}/descargar', [\App\Http\Controllers\InstructorController::class, 'descargarReporte'])->name('instructor.sesion.descargar');
     });
 });
