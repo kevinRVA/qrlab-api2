@@ -121,8 +121,11 @@
                             <select id="filtro-tipo" class="form-select form-select-sm" onchange="aplicarFiltros()">
                                 <option value="TODOS">Todos</option>
                                 <option value="Clase">&#128218; Clase</option>
+                                <option value="Clase de Apoyo">&#128218; Clase de Apoyo</option>
                                 <option value="Parcial">&#128221; Parcial</option>
+                                <option value="Revisión de Parcial">&#128221; Revisión de Parcial</option>
                                 <option value="Reposicion">&#128260; Reposici&oacute;n</option>
+                                <option value="Reposición">&#128260; Reposici&oacute;n (Instructor)</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -377,10 +380,12 @@
         }
 
         const badgeTipo = (tipo) => {
-            switch(tipo) {
-                case 'Parcial':    return `<span class="badge" style="background:#fd7e14;">&#128221; Parcial</span>`;
-                case 'Reposicion': return `<span class="badge" style="background:#7c3aed;">&#128260; Reposici&oacute;n</span>`;
-                default:           return `<span class="badge bg-primary">&#128218; Clase</span>`;
+            if (tipo === 'Parcial' || tipo === 'Revisión de Parcial') {
+                return `<span class="badge" style="background:#fd7e14;">&#128221; ${tipo}</span>`;
+            } else if (tipo === 'Reposicion' || tipo === 'Reposición') {
+                return `<span class="badge" style="background:#7c3aed;">&#128260; ${tipo}</span>`;
+            } else {
+                return `<span class="badge bg-primary">&#128218; ${tipo}</span>`;
             }
         };
 

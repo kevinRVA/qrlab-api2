@@ -51,7 +51,7 @@ class InstructorController extends Controller
         $request->validate([
             'section_id'      => 'required|exists:sections,id',
             'laboratory_name' => 'required|string',
-            'class_type'      => 'required|in:Clase,Parcial,Reposicion',
+            'class_type'      => 'required|in:Clase de Apoyo,Revisión de Parcial,Reposición',
         ]);
 
         $instructor = Auth::user();
