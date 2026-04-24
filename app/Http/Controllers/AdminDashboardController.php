@@ -181,19 +181,49 @@ class AdminDashboardController extends Controller
         return view('admin.instructors');
     }
 
+    public function assignInstructorView()
+    {
+        // View for assigning a new instructor
+        // We only pass the sections here because they are usually a small list
+        $sections = \App\Models\Section::with(['subject', 'teacher'])->get();
+        return view('admin.instructors-assign', compact('sections'));
+    }
+
     public function getInstructorsApi()
     {
-        // Return students and any assigned sections
+        // Return ONLY assigned instructors and sections (or those marked as instructors)
         $students = User::where('role', User::ROLE_STUDENT)
+            ->where(function($query) {
+                $query->where('is_instructor', true)
+                      ->orWhereHas('instructorSections');
+            })
             ->with(['instructorSections.subject', 'instructorSections.teacher'])
             ->get();
-            
-        $sections = \App\Models\Section::with(['subject', 'teacher'])->get();
 
         return response()->json([
             'students' => $students,
-            'sections' => $sections
+            // 'sections' => $sections // Remove if not needed by the main view anymore
         ]);
+    }
+
+    public function searchStudentsApi(Request $request)
+    {
+        $query = $request->input('q');
+        
+        if (empty($query) || strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $students = User::where('role', User::ROLE_STUDENT)
+            ->where(function($q) use ($query) {
+                $q->where('name', 'LIKE', '%' . $query . '%')
+                  ->orWhere('user_code', 'LIKE', '%' . $query . '%');
+            })
+            ->select('id', 'name', 'user_code', 'email')
+            ->limit(20)
+            ->get();
+
+        return response()->json($students);
     }
 
     public function assignInstructor(Request $request)

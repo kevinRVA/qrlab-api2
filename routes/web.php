@@ -131,12 +131,14 @@ Route::middleware(['auth', \App\Http\Middleware\NoCacheHeaders::class])->group(f
     Route::middleware('role:' . User::ROLE_ADMIN)->group(function () {
         // Vista de instructores
         Route::get('/admin/instructors', [AdminDashboardController::class, 'instructorsIndex'])->name('admin.instructors');
+        Route::get('/admin/instructors/assign', [AdminDashboardController::class, 'assignInstructorView'])->name('admin.instructors.assign');
         
         // Rutas de Configuración del Sistema (Coordinadores y Labs)
         Route::get('/admin/configuracion', [\App\Http\Controllers\ConfiguracionSistemaController::class, 'index'])->name('admin.configuracion');
 
         // Instructores
         Route::get('/api/admin/system/instructors', [AdminDashboardController::class, 'getInstructorsApi']);
+        Route::get('/api/admin/system/students/search', [AdminDashboardController::class, 'searchStudentsApi']);
         Route::post('/api/admin/system/instructors/assign', [AdminDashboardController::class, 'assignInstructor']);
         Route::post('/api/admin/system/instructors/remove', [AdminDashboardController::class, 'removeInstructorAssignment']);
 
